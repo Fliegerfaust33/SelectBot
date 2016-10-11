@@ -1,15 +1,15 @@
+#RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=icons\Elegantthemes-Beautiful-Flat-Compose.ico
 #AutoIt3Wrapper_Outfile=SelectBot.Exe
 #AutoIt3Wrapper_Compression=4
 #AutoIt3Wrapper_Res_Comment=For MyBot.run. Made by Fliegerfaust
 #AutoIt3Wrapper_Res_Description=SelectBot for MyBot
-#AutoIt3Wrapper_Res_Fileversion=3.6.2.0
+#AutoIt3Wrapper_Res_Fileversion=3.6.2.1
 #AutoIt3Wrapper_Res_LegalCopyright=Fliegerfaust
 #AutoIt3Wrapper_Run_Tidy=y
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
-#RequireAdmin
 #include <FileConstants.au3>
 #include <MsgBoxConstants.au3>
 #include <AutoItConstants.au3>
@@ -38,7 +38,7 @@
 Global $sBotFile = "mybot.run.exe"
 Global $sBotFileAU3 = "mybot.run.au3"
 Global $iFlag = 0
-Global $sVersion = "3.6.2"
+Global $sVersion = "3.6.2.1"
 Global $sProfiles = @MyDocumentsDir & "\Profiles.ini"
 Global $sIniProfile, $sIniEmulator, $sIniInstance, $sIniDir
 Global Enum $IdRun = 1000, $IdEdit, $IdDelete, $IdNickname
@@ -58,6 +58,7 @@ Func GUI_Main()
 
 	Global $Gui_Main = GUICreate("Select", 258, 452, -1, -1)
 	Global $Lstbx_Main = GUICtrlCreateList("", 8, 24, 241, 305, BitOR($LBS_SORT, $LBS_NOTIFY, $LBS_EXTENDEDSEL))
+	$hListBox = GUICtrlGetHandle(-1)
 	$Lbl_Setups = GUICtrlCreateLabel("Your saved Setups:", 8, 4, 200, 17)
 	Global $Lbl_Log = GUICtrlCreateLabel("Made by: Fliegerfaust", 8, 416, 244, 17)
 	$Btn_Setup = GUICtrlCreateButton("New Setup", 8, 336, 107, 25, $WS_GROUP)
@@ -75,12 +76,15 @@ Func GUI_Main()
 	$Menu_Droid4X = GUICtrlCreateMenuItem("Droid4X", $Menu_Emulators)
 	$Menu_Nox = GUICtrlCreateMenuItem("Nox", $Menu_Emulators)
 	$Menu_LeapDroid = GUICtrlCreateMenuItem("LeapDroid", $Menu_Emulators)
+	$Menu_KOPLAYER = GUICtrlCreateMenuItem("KOPLAYER", $Menu_Emulators)
 	$Menu_Update = GUICtrlCreateMenu("Updates")
 	$Menu_CheckForUpdate = GUICtrlCreateMenuItem("Check for Updates", $Menu_Update)
 	$Menu_Misc = GUICtrlCreateMenu("Misc")
 	$Menu_Clear = GUICtrlCreateMenuItem("Clear Local Files", $Menu_Misc)
 	GUISetState(@SW_SHOW)
 	; GUI MAIN
+	UpdateList_Main()
+	WelcomeMsg()
 
 	GUIRegisterMsg($WM_CONTEXTMENU, "WM_CONTEXTMENU")
 	GUIRegisterMsg($WM_COMMAND, "WM_COMMAND")
@@ -93,15 +97,8 @@ Func GUI_Main()
 	_GUICtrlMenu_InsertMenuItem($Context_Main, 3, "Nickname", $IdNickname)
 	;CONTEXT MENU OF MAIN GUI
 
-	WelcomeMsg()
-	UpdateList_Main()
-
-
 
 	While 1
-
-
-
 
 		$aMsg = GUIGetMsg(1)
 		Switch $aMsg[1]
@@ -113,7 +110,7 @@ Func GUI_Main()
 
 					Case $GUI_EVENT_SECONDARYDOWN
 
-						If GUICtrlRead($Lstbx_Main) Then
+						If GUICtrlRead($Lstbx_Main) = "" Then
 							$iFlag = 1
 						EndIf
 
@@ -144,6 +141,8 @@ Func GUI_Main()
 						ShellExecute("http://en.bignox.com/en/download/fullPackage")
 					Case $Menu_LeapDroid
 						ShellExecute("http://www.leapdroid.com/installer/current/LeapdroidVMInstallerFull.exe")
+					Case $Menu_KOPLAYER
+						ShellExecute("http://down1.koplayer.com/Emulator/koplayer-1.4.1049.exe")
 
 					Case $Menu_CheckForUpdate
 
@@ -171,6 +170,7 @@ Func GUI_Main()
 						EndSelect
 
 						FileDelete($sTempPath)
+
 
 					Case $Menu_Clear
 						$hMsgDelete = MsgBox($MB_YESNO, "Delete Local Files", "This will delete all SelectBot Files (Profiles, Config and Auto Update) Do you want to proceed?", 0, $Gui_Main)
@@ -215,7 +215,7 @@ Func GUI_Main()
 						UpdateList_Main()
 
 					Case $Btn_AutoStart
-
+						GUISetState(@SW_DISABLE, $Gui_Main)
 						GUI_AutoStart()
 						GUISetState(@SW_ENABLE, $Gui_Main)
 
@@ -298,7 +298,7 @@ EndFunc   ;==>GUI_Profile
 Func GUI_Emulator()
 	Global $Gui_Emulator = GUICreate("Emulator", 258, 167, $aGuiPos_Main[0], $aGuiPos_Main[1] + 150, -1, -1, $Gui_Main)
 	$Cmb_Emulator = GUICtrlCreateCombo("BlueStacks", 24, 72, 201, 21, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL))
-	GUICtrlSetData($Cmb_Emulator, "BlueStacks2|MEmu|Droid4X|Nox|LeapDroid")
+	GUICtrlSetData($Cmb_Emulator, "BlueStacks2|MEmu|Droid4X|Nox|LeapDroid|KOPLAYER")
 	$Btn_Next = GUICtrlCreateButton("Next step", 72, 120, 97, 25, $WS_GROUP)
 	$Lbl_Info = GUICtrlCreateLabel("Please select your Emulator", 24, 8, 204, 57)
 	GUISetState()
@@ -361,10 +361,14 @@ Func GUI_Instance()
 		GUISetState(@SW_SHOW, $Gui_Instance)
 		GUICtrlSetData($Lbl_Info, "Please type in your Nox Instance Name! Example: nox , nox_1, nox_2, etc")
 		GUICtrlSetData($Ipt_Instance, "nox_")
-	Else
+	ElseIf $sSelectedEmulator = "LeapDroid" Then
 		GUISetState(@SW_SHOW, $Gui_Instance)
 		GUICtrlSetData($Lbl_Info, "Please type in your LeapDroid Instance Name! Example: vm1 , vm2, etc")
 		GUICtrlSetData($Ipt_Instance, "vm")
+	Else
+		GUISetState(@SW_SHOW, $Gui_Instance)
+		GUICtrlSetData($Lbl_Info, "Please type in your KOPLAYER Instance Name! Example: KOPLAYER , KOPLAYER_1 , KOPLAYER_2, etc")
+		GUICtrlSetData($Ipt_Instance, "KOPLAYER_")
 	EndIf
 
 
@@ -388,19 +392,20 @@ Func GUI_Instance()
 				$Instances = LaunchConsole(InstanceMgr(), "list vms", 1000)
 				If $sSelectedEmulator <> "LeapDroid" Then
 					$Instance = StringRegExp($Instances, "(?i)" & $sSelectedEmulator & "(?:[_][0-9])?", 3)
+					If $sSelectedEmulator = "KOPLAYER" And EmuInstalled() = True Then $Instance = _ArrayUnique($Instance, 0, 0, 0, 0)
 				ElseIf $sSelectedEmulator = "LeapDroid" Then
 					$Instance = StringRegExp($Instances, "(?i)vm\d?", 3)
 				EndIf
 
-				If _ArraySearch($Instance, $Inst) = -1 And $Instance = 1 Then
+				If _ArraySearch($Instance, $Inst, 0, 0, 1) = -1 And $Instance = 1 Then
 					MsgBox($MB_OK, "Error", "Couldn't find any Instances for " & $sSelectedEmulator & "." & " There are only two reasons why." & @CRLF & "#1: You deleted all Instances" & @CRLF & "#2: You don't have the Emulator installed and still pressed YES on the Pop Up before :(", 0, $Gui_Instance)
 					GUIDelete($Gui_Instance)
 					IniDelete($sProfiles, $sTypedProfile)
 					GUICtrlSetData($Lbl_Log, "Profile Creation cancelled.")
 					Return -1
 
-				ElseIf _ArraySearch($Instance, $Inst) = -1 Then
-					$Msg2 = MsgBox($MB_OK, "Typo ?", "Couldn't find the Instance Name you typed in. Please check your Instances once again and retype it." & @CRLF & "Here is a list of Instances I could find on your PC:" & @CRLF & @CRLF & _ArrayToString($Instance, @CRLF) & @CRLF & @CRLF & 'If you are sure that you got the Instance right but this Message keeps coming then press "Yes" to continue!' & @CRLF & @CRLF & "Do you want to continue?", 0, $Gui_Instance)
+				ElseIf _ArraySearch($Instance, $Inst, 0, 0, 1) = -1 Then
+					$Msg2 = MsgBox($MB_YESNO, "Typo ?", "Couldn't find the Instance Name you typed in. Please check your Instances once again and retype it ( Also check the case sensitivity)" & @CRLF & "Here is a list of Instances I could find on your PC:" & @CRLF & @CRLF & _ArrayToString($Instance, @CRLF) & @CRLF & @CRLF & 'If you are sure that you got the Instance right but this Message keeps coming then press "Yes" to continue!' & @CRLF & @CRLF & "Do you want to continue?", 0, $Gui_Instance)
 					If $Msg2 = $IDYES Then
 						GUICtrlSetData($Lbl_Log, "Instance:" & " " & $Inst)
 						IniWrite($sProfiles, $sTypedProfile, "Instance", $Inst)
@@ -482,7 +487,7 @@ Func GUI_Edit()
 
 	$aLstbx_GetSelTxt = _GUICtrlListBox_GetSelItemsText($Lstbx_Main)
 	ReadIni($aLstbx_GetSelTxt[1])
-	$sFolder = $sIniDir
+	$sSelectedFolder = $sIniDir
 	$aGuiPos_Main = WinGetPos($Gui_Main, "")
 	$Gui_Edit = GUICreate("Edit INI", 258, 187, $aGuiPos_Main[0], $aGuiPos_Main[1] + 150, -1, -1, $Gui_Main)
 	$Ipt_Profile = GUICtrlCreateInput($sIniProfile, 112, 8, 137, 21)
@@ -500,19 +505,21 @@ Func GUI_Edit()
 
 	Select
 		Case $sIniEmulator = "BlueStacks"
-			GUICtrlSetData($Cmb_Emulator, "BlueStacks2|MEmu|Droid4X|Nox|LeapDroid")
+			GUICtrlSetData($Cmb_Emulator, "BlueStacks2|MEmu|Droid4X|Nox|LeapDroid|KOPLAYER")
 			GUICtrlSetState($Ipt_Instance, $GUI_DISABLE)
 		Case $sIniEmulator = "BlueStacks2"
-			GUICtrlSetData($Cmb_Emulator, "BlueStacks|MEmu|Droid4X|Nox|LeapDroid")
+			GUICtrlSetData($Cmb_Emulator, "BlueStacks|MEmu|Droid4X|Nox|LeapDroid|KOPLAYER")
 			GUICtrlSetState($Ipt_Instance, $GUI_DISABLE)
 		Case $sIniEmulator = "MEmu"
-			GUICtrlSetData($Cmb_Emulator, "BlueStacks|BlueStacks2|Droid4X|Nox|LeapDroid")
+			GUICtrlSetData($Cmb_Emulator, "BlueStacks|BlueStacks2|Droid4X|Nox|LeapDroid|KOPLAYER")
 		Case $sIniEmulator = "Droid4X"
-			GUICtrlSetData($Cmb_Emulator, "BlueStacks|BlueStacks2|MEmu|Nox|LeapDroid")
+			GUICtrlSetData($Cmb_Emulator, "BlueStacks|BlueStacks2|MEmu|Nox|LeapDroid|KOPLAYER")
 		Case $sIniEmulator = "Nox"
-			GUICtrlSetData($Cmb_Emulator, "BlueStacks|BlueStacks2|MEmu|Droid4X|LeapDroid")
+			GUICtrlSetData($Cmb_Emulator, "BlueStacks|BlueStacks2|MEmu|Droid4X|LeapDroid|KOPLAYER")
 		Case $sIniEmulator = "LeapDroid"
-			GUICtrlSetData($Cmb_Emulator, "BlueStacks|BlueStacks2|MEmu|Droid4X|Nox")
+			GUICtrlSetData($Cmb_Emulator, "BlueStacks|BlueStacks2|MEmu|Droid4X|Nox|KOPLAYER")
+		Case $sIniEmulator = "KOPLAYER"
+			GUICtrlSetData($Cmb_Emulator, "BlueStacks|BlueStacks2|MEmu|Droid4X|Nox|LeapDroid")
 		Case Else
 			MsgBox($MB_OK, "Error", "Oops, as it looks like you changed Data in the Config File.Pleae delete all corrupted Sections!", 0, $Gui_Edit)
 	EndSelect
@@ -543,6 +550,8 @@ Func GUI_Edit()
 							GUICtrlSetData($Ipt_Instance, "Nox_")
 						Case $sSelectedEmulator = "LeapDroid"
 							GUICtrlSetData($Ipt_Instance, "vm")
+						Case $sSelectedEmulator = "KOPLAYER"
+							GUICtrlSetData($Ipt_Instance, "KOPLAYER_")
 						Case Else
 							MsgBox($MB_OK, "Error", "Oops, as it looks like you changed Data in the Config File. Please revert it or delete all corrupted Sections!", 0, $Gui_Edit)
 					EndSelect
@@ -660,8 +669,6 @@ Func GUI_AutoStart()
 	WEnd
 EndFunc   ;==>GUI_AutoStart
 
-
-
 Func RunSetup()
 	$aLstbx_GetSelTxt = _GUICtrlListBox_GetSelItemsText($Lstbx_Main)
 	For $i = 1 To $aLstbx_GetSelTxt[0]
@@ -687,20 +694,19 @@ Func UpdateList_Main() ; Main List Updating
 	For $i = 1 To UBound($sections, 1) - 1
 		_GUICtrlListBox_AddString($Lstbx_Main, $sections[$i])
 	Next
-
+	$RemoveOptions = _GUICtrlListBox_FindString($Lstbx_Main, "Options")
+	_GUICtrlListBox_DeleteString($Lstbx_Main, $RemoveOptions)
+	_GUICtrlListBox_EndUpdate($Lstbx_Main)
 	$iLstBx_Items = _GUICtrlListBox_GetCount($Lstbx_Main)
-	If $iLstBx_Items = -1 Then
+	If $iLstBx_Items = 0 Then
 		GUICtrlSetState($Btn_Shortcut, $GUI_DISABLE)
 		GUICtrlSetState($Btn_AutoStart, $GUI_DISABLE)
-	ElseIf $iLstBx_Items <> -1 Then
+	ElseIf $iLstBx_Items > 0 Then
 		GUICtrlSetState($Btn_Shortcut, $GUI_ENABLE)
 		GUICtrlSetState($Btn_AutoStart, $GUI_ENABLE)
+		_GUICtrlListBox_ClickItem($Lstbx_Main, 0)
 	EndIf
 
-	$RemoveSettings = _GUICtrlListBox_FindString($Lstbx_Main, "Settings")
-	_GUICtrlListBox_DeleteString($Lstbx_Main, $RemoveSettings)
-	_GUICtrlListBox_EndUpdate($Lstbx_Main)
-	_GUICtrlListBox_ClickItem($Lstbx_Main, 0)
 EndFunc   ;==>UpdateList_Main
 
 
@@ -708,29 +714,19 @@ EndFunc   ;==>UpdateList_Main
 Func UpdateList_AS()
 	GUICtrlSetData($Lst_AutoStart, "")
 	$aProfiles = IniReadSectionNames($sProfiles)
-	For $i = 1 To $aProfiles[0]
-		$sProfiles2 = IniRead($sProfiles, $aProfiles[$i], "Profile", "")
-		If FileExists(@StartupDir & "\MyBot -" & $sProfiles2 & ".lnk") Then
-			GUICtrlSetData($Lst_AutoStart, $sProfiles2)
-		EndIf
-	Next
+	If @error <> 0 Then
+	Else
+		For $i = 1 To $aProfiles[0]
+			$sProfiles2 = IniRead($sProfiles, $aProfiles[$i], "Profile", "")
+			If FileExists(@StartupDir & "\MyBot -" & $sProfiles2 & ".lnk") Then
+				GUICtrlSetData($Lst_AutoStart, $sProfiles2)
+			EndIf
+		Next
+	EndIf
 
 EndFunc   ;==>UpdateList_AS
 
 
-
-Func CheckIfListEmpty()
-
-	$iLstBx_Items = _GUICtrlListBox_GetCount($Lstbx_Main)
-	If $iLstBx_Items = -1 Then
-		GUICtrlSetState($Btn_Shortcut, $GUI_DISABLE)
-		GUICtrlSetState($Btn_AutoStart, $GUI_DISABLE)
-	ElseIf $iLstBx_Items <> -1 Then
-		GUICtrlSetState($Btn_Shortcut, $GUI_ENABLE)
-		GUICtrlSetState($Btn_AutoStart, $GUI_ENABLE)
-	EndIf
-
-EndFunc   ;==>CheckIfListEmpty
 
 
 
@@ -748,7 +744,7 @@ EndFunc   ;==>ReadIni
 
 
 
-Func WM_CONTEXTMENU($hWnd, $Msg, $wParam, $lParam)
+Func WM_CONTEXTMENU($hWnd, $msg, $wParam, $lParam)
 	Local $tPoint = _WinAPI_GetMousePos(True, GUICtrlGetHandle($Lstbx_Main))
 	Local $iY = DllStructGetData($tPoint, "Y")
 
@@ -873,11 +869,17 @@ EndFunc   ;==>WelcomeMsg
 
 
 
+; THANKS COSOTE
 
-
-
-
-
+Func GetKOPLAYERPath()
+	Local $KOPLAYER_Path = RegRead($HKLM & "\SOFTWARE\KOPLAYER\SETUP\", "InstallPath")
+	If $KOPLAYER_Path = "" Then ; work-a-round
+		$KOPLAYER_Path = @ProgramFilesDir & "\KOPLAYER\"
+	Else
+		If StringRight($KOPLAYER_Path, 1) <> "\" Then $KOPLAYER_Path &= "\"
+	EndIf
+	Return $KOPLAYER_Path
+EndFunc   ;==>GetKOPLAYERPath
 
 Func GetLeapDroidPath()
 	Local $LeapDroid_Path = RegRead($HKLM & "\SOFTWARE\Leapdroid\Leapdroid VM\", "InstallDir")
@@ -988,6 +990,9 @@ Func EmuInstalled()
 		Case $sSelectedEmulator = "LeapDroid"
 			$EmuPath = GetLeapDroidPath()
 			$EmuExe = "LeapdroidVM.exe"
+		Case $sSelectedEmulator = "KOPLAYER"
+			$EmuPath = GetKOPLAYERPath()
+			$EmuExe = "KOPLAYER.exe"
 
 		Case $sSelectedEmulator = "BlueStacks" Or "BlueStacks2"
 			$EmuPath = GetBsPath()
@@ -1029,6 +1034,10 @@ Func InstanceMgr()
 
 		Case $sSelectedEmulator = "LeapDroid"
 			$MgrPath = GetLeapDroidPath() & "VBoxManage.exe"
+
+		Case $sSelectedEmulator = "KOPLAYER"
+			$MgrPath = GetKOPLAYERPath() & "vbox\VBoxManage.exe"
+
 	EndSelect
 
 
@@ -1095,6 +1104,10 @@ Func CleanLaunchOutput(ByRef $output)
 	If StringRight($output, 1) = @LF Then $output = StringLeft($output, StringLen($output) - 1)
 	If StringRight($output, 1) = @CR Then $output = StringLeft($output, StringLen($output) - 1)
 EndFunc   ;==>CleanLaunchOutput
+
+
+
+
 
 
 
