@@ -1,4 +1,4 @@
 [General]
-DisplayMsg=0
-Msg=""
+DisplayMsg=3.7
+Msg="Test"
 Note= LineBreakers = %
