@@ -1,4 +1,4 @@
 [General]
-DisplayVers=3.7
-Msg="New Things in this Version:%-Show Bot Version of each Profile%-Hold Shift and Double Click Setup to see the chosen Options as Profile, Emulator, Instance and Directory%%Future Plans:%-Move Selectbot in Botfolder and auto detect Profiles/Emulators/Instances%-More Shortcuts%- etc.%%%For any Bugs or Problems please contact me via Private Message here: https://mybot.run/forums/index.php?/profile/126633-fliegerfaust/"
+DisplayVers=3.7.2
+Msg="Changelog in 3.7.2:%%%-Add Statusbar%-Add ProgressBar%-Fixed Setup Deletion%- Fixed Setup Editing%-Fixed Directory Selection%- Smaller Fixes
 Note= LineBreakers = %
