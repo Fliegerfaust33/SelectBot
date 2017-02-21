@@ -38,24 +38,20 @@
 #include <ColorConstants.au3>
 #include <ListViewConstants.au3>
 #include <GuiListView.au3>
-#include <GuiImageList.au3>
 #include <GuiStatusBar.au3>
 #include <ProgressConstants.au3>
 #include <SendMessage.au3>
 
-Global $sBotFile = "mybot.run.exe"
-Global $sBotFileAU3 = "mybot.run.au3"
-Global $sVersion = "3.7.2"
-Global $sProfiles = @MyDocumentsDir & "\Profiles.ini"
-Global $Gui_Main, $Gui_Profile, $Gui_Emulator, $Gui_Instance, $Gui_Dir
-Global $Listview_Main, $Lst_AutoStart
-Global $Log, $Progress
-Global $Btn_Shortcut
-Global $Btn_AutoStart
-Global $Context_Main
-Global $aGuiPos_Main
-Global $sIniProfile, $sIniEmulator, $sIniInstance, $sIniDir
-Global Enum $IdRun = 1000, $IdEdit, $IdDelete, $IdNickname
+Global $g_sBotFile = "mybot.run.exe"
+Global $g_sBotFileAU3 = "mybot.run.au3"
+Global $g_sVersion = "3.7.2"
+Global $g_sDirProfiles = @MyDocumentsDir & "\Profiles.ini"
+Global $g_hGui_Main, $g_hGui_Profile, $g_hGui_Emulator, $g_hGui_Instance, $g_hGui_Dir, $g_hGUI_AutoStart, $g_hGUI_Edit, $g_hListview_Main, $g_hLst_AutoStart, $g_hLog, $g_hProgress, $g_hBtn_Shortcut, $g_hBtn_AutoStart, $g_hContext_Main
+Global $g_hListview_Instances
+Global $g_aGuiPos_Main
+Global $g_sTypedProfile, $g_sSelectedEmulator
+Global $g_sIniProfile, $g_sIniEmulator, $g_sIniInstance, $g_sIniDir
+Global Enum $eRun = 1000, $eEdit, $eDelete, $eNickname
 
 If @OSArch = "X86" Then
 	$Wow6432Node = ""
@@ -69,46 +65,49 @@ GUI_Main()
 
 Func GUI_Main()
 
-	$Gui_Main = GUICreate("Select", 258, 452, -1, -1)
-	$Listview_Main = GUICtrlCreateListView("", 8, 24, 241, 305, BitOR($LVS_REPORT, $LVS_SHOWSELALWAYS), -1)
-	_GUICtrlListView_InsertColumn($Listview_Main, 1, "Setup", 172)
-	_GUICtrlListView_InsertColumn($Listview_Main, 2, "Bot Vers", 65)
-	$Lbl_Setups = GUICtrlCreateLabel("Your saved Setups:", 8, 4, 200, 17)
-	$Btn_Setup = GUICtrlCreateButton("New Setup", 8, 336, 107, 25, $WS_GROUP)
-	$Btn_Shortcut = GUICtrlCreateButton("New Shortcut", 136, 336, 113, 25, $WS_GROUP)
-	$Btn_AutoStart = GUICtrlCreateButton("Auto Start", 136, 368, 113, 25, $WS_GROUP)
-	$Menu_Help = GUICtrlCreateMenu("&Help")
-	$Menu_HelpMsg = GUICtrlCreateMenuItem("Help", $Menu_Help)
-	$Menu_ForumTopic = GUICtrlCreateMenuItem("Forum Topic", $Menu_Help)
-	$Menu_Documents = GUICtrlCreateMenuItem("Profile Directory", $Menu_Help)
-	$Menu_Startup = GUICtrlCreateMenuItem("Startup Directory", $Menu_Help)
-	$Menu_Emulators = GUICtrlCreateMenu("&Emulators")
-	$Menu_BlueStacks1 = GUICtrlCreateMenuItem("BlueStacks", $Menu_Emulators)
-	$Menu_BlueStacks2 = GUICtrlCreateMenuItem("BlueStacks2", $Menu_Emulators)
-	$Menu_MEmu = GUICtrlCreateMenuItem("MEmu", $Menu_Emulators)
-	$Menu_Droid4X = GUICtrlCreateMenuItem("Droid4X", $Menu_Emulators)
-	$Menu_Nox = GUICtrlCreateMenuItem("Nox", $Menu_Emulators)
-	$Menu_LeapDroid = GUICtrlCreateMenuItem("LeapDroid", $Menu_Emulators)
-	$Menu_KOPLAYER = GUICtrlCreateMenuItem("KOPLAYER", $Menu_Emulators)
-	$Menu_iTools = GUICtrlCreateMenuItem("iTools", $Menu_Emulators)
-	$Menu_Update = GUICtrlCreateMenu("Updates")
-	$Menu_CheckForUpdate = GUICtrlCreateMenuItem("Check for Updates", $Menu_Update)
-	$Menu_Misc = GUICtrlCreateMenu("Misc")
-	$Menu_Clear = GUICtrlCreateMenuItem("Clear Local Files", $Menu_Misc)
+	$g_hGui_Main = GUICreate("Select", 258, 452, -1, -1)
+	$g_hListview_Main = GUICtrlCreateListView("", 8, 24, 241, 305, BitOR($LVS_REPORT, $LVS_SHOWSELALWAYS), -1)
+	_GUICtrlListView_InsertColumn($g_hListview_Main, 1, "Setup", 172)
+	_GUICtrlListView_InsertColumn($g_hListview_Main, 2, "Bot Vers", 65)
+	;GUICtrlCreateLabel("Your saved Setups:", 8, 4, 200, 17)
+	$g_hBtn_Setup = GUICtrlCreateButton("New Setup", 8, 336, 243, 25, $WS_GROUP)
+	GUICtrlSetTip(-1, "Use this Button to create a new Setup with your Profile, wished Emulator and Instance aswell as the Bot you want to use")
+	$g_hBtn_Shortcut = GUICtrlCreateButton("Shortcut", 8, 368, 113, 25, $WS_GROUP)
+	GUICtrlSetTip(-1, "Use this Button to create a new Shortcut for the Selected Setups. With this you can run your Setups with a single Click")
+	$g_hBtn_AutoStart = GUICtrlCreateButton("Auto Start", 136, 368, 113, 25, $WS_GROUP)
+	GUICtrlSetTip(-1, "use this Button if you want to start Setups automatically when the Computer boots up")
+	$hMenu_Help = GUICtrlCreateMenu("&Help")
+	$hMenu_HelpMsg = GUICtrlCreateMenuItem("Help", $hMenu_Help)
+	$hMenu_ForumTopic = GUICtrlCreateMenuItem("Forum Topic", $hMenu_Help)
+	$hMenu_Documents = GUICtrlCreateMenuItem("Profile Directory", $hMenu_Help)
+	$hMenu_Startup = GUICtrlCreateMenuItem("Startup Directory", $hMenu_Help)
+	$hMenu_Emulators = GUICtrlCreateMenu("&Emulators")
+	$hMenu_BlueStacks1 = GUICtrlCreateMenuItem("BlueStacks", $hMenu_Emulators)
+	$hMenu_BlueStacks2 = GUICtrlCreateMenuItem("BlueStacks2", $hMenu_Emulators)
+	$hMenu_MEmu = GUICtrlCreateMenuItem("MEmu", $hMenu_Emulators)
+	$hMenu_Droid4X = GUICtrlCreateMenuItem("Droid4X", $hMenu_Emulators)
+	$hMenu_Nox = GUICtrlCreateMenuItem("Nox", $hMenu_Emulators)
+	$hMenu_LeapDroid = GUICtrlCreateMenuItem("LeapDroid", $hMenu_Emulators)
+	$hMenu_KOPLAYER = GUICtrlCreateMenuItem("KOPLAYER", $hMenu_Emulators)
+	$hMenu_iTools = GUICtrlCreateMenuItem("iTools", $hMenu_Emulators)
+	$hMenu_Update = GUICtrlCreateMenu("Updates")
+	$hMenu_CheckForUpdate = GUICtrlCreateMenuItem("Check for Updates", $hMenu_Update)
+	$hMenu_Misc = GUICtrlCreateMenu("Misc")
+	$hMenu_Clear = GUICtrlCreateMenuItem("Clear Local Files", $hMenu_Misc)
 
-	$Log = _GUICtrlStatusBar_Create($Gui_Main)
-	_GUICtrlStatusBar_SetParts($Log, 2, 185)
-	_GUICtrlStatusBar_SetText($Log, "Fliegerfaust for MyBot.run")
-	$Progress = GUICtrlCreateProgress(0, 0, -1, -1, $PBS_SMOOTH)
-	$hProgress = GUICtrlGetHandle($Progress)
-	_GUICtrlStatusBar_EmbedControl($Log, 1, $hProgress)
-	GUICtrlSetState($Progress, $GUI_HIDE)
+	$g_hLog = _GUICtrlStatusBar_Create($g_hGui_Main)
+	_GUICtrlStatusBar_SetParts($g_hLog, 2, 185)
+	_GUICtrlStatusBar_SetText($g_hLog, "Fliegerfaust for MyBot.run")
+	$g_hProgress = GUICtrlCreateProgress(0, 0, -1, -1, $PBS_SMOOTH)
+	$hProgress = GUICtrlGetHandle($g_hProgress)
+	_GUICtrlStatusBar_EmbedControl($g_hLog, 1, $hProgress)
 
-	$Context_Main = _GUICtrlMenu_CreatePopup()
-	_GUICtrlMenu_InsertMenuItem($Context_Main, 0, "Run", $IdRun)
-	_GUICtrlMenu_InsertMenuItem($Context_Main, 1, "Edit", $IdEdit)
-	_GUICtrlMenu_InsertMenuItem($Context_Main, 2, "Delete", $IdDelete)
-	_GUICtrlMenu_InsertMenuItem($Context_Main, 3, "Nickname", $IdNickname)
+	$g_hContext_Main = _GUICtrlMenu_CreatePopup()
+	_GUICtrlMenu_InsertMenuItem($g_hContext_Main, 0, "Run", $eRun)
+	_GUICtrlMenu_InsertMenuItem($g_hContext_Main, 1, "Edit", $eEdit)
+	_GUICtrlMenu_InsertMenuItem($g_hContext_Main, 2, "Delete", $eDelete)
+	_GUICtrlMenu_InsertMenuItem($g_hContext_Main, 3, "Nickname", $eNickname)
+
 	GUISetState(@SW_SHOW)
 
 	GUIRegisterMsg($WM_CONTEXTMENU, "WM_CONTEXTMENU")
@@ -118,54 +117,54 @@ Func GUI_Main()
 	UpdateList_Main()
 	WelcomeMsg()
 
-	If IniRead($sProfiles, "Options", "DisplayVersSent", "") = "" Then IniWrite($sProfiles, "Options", "DisplayVersSent", "3.5")
+	If IniRead($g_sDirProfiles, "Options", "DisplayVersSent", "") = "" Then IniWrite($g_sDirProfiles, "Options", "DisplayVersSent", "1.0")
 
 	While 1
 
 		$aMsg = GUIGetMsg(1)
 		Switch $aMsg[1]
 
-			Case $Gui_Main
+			Case $g_hGui_Main
 				Switch $aMsg[0]
 					Case $GUI_EVENT_CLOSE
 						ExitLoop
 
-					Case $Menu_HelpMsg
-						MsgBox($MB_OK, "Help", "To create a new Setup just press the New Setup Button and walk through the Guide!" & @CRLF & @CRLF & "To create a new Shortcut just press the New Shortcut Button and a Shortcut gets created on your Desktop!" & @CRLF & @CRLF & "Double Click an Item in the List to start the Bot with the highlighted Setup!" & @CRLF & @CRLF & "Right Click for a Context Menu." & @CRLF & @CRLF & "The Auto Updater will be downloaded and when you turn it off it will stay there but won't activate. When you delete this Tool make sure to Click on Misc and then Clear Local Files!", 0, $Gui_Main)
-					Case $Menu_ForumTopic
+					Case $hMenu_HelpMsg
+						MsgBox($MB_OK, "Help", "To create a new Setup just press the New Setup Button and walk through the Guide!" & @CRLF & @CRLF & "To create a new Shortcut just press the New Shortcut Button and a Shortcut gets created on your Desktop!" & @CRLF & @CRLF & "Double Click an Item in the List to start the Bot with the highlighted Setup!" & @CRLF & @CRLF & "Right Click for a Context Menu." & @CRLF & @CRLF & "The Auto Updater will be downloaded and when you turn it off it will stay there but won't activate. When you delete this Tool make sure to Click on Misc and then Clear Local Files!", 0, $g_hGui_Main)
+					Case $hMenu_ForumTopic
 						ShellExecute("https://mybot.run/forums/index.php?/topic/15860-how-to-run-multiple-botshow-to-bot-on-droid4x-and-memu-w-updated-tool/")
 
-					Case $Menu_Documents
+					Case $hMenu_Documents
 						ShellExecute(@MyDocumentsDir)
 
-					Case $Menu_Startup
+					Case $hMenu_Startup
 						ShellExecute(@StartupDir)
 
-					Case $Menu_BlueStacks1
+					Case $hMenu_BlueStacks1
 						ShellExecute("https://mega.nz/#!GFVilDAL!Wkyp2xpxFOx8J_Gz8wIf0jGSxTT3IiT6xthvrHhRbME")
 
-					Case $Menu_BlueStacks2
+					Case $hMenu_BlueStacks2
 						ShellExecute("https://mega.nz/#!BpdEUBbZ!4unxWMPzA5rESONTVgNrxlNxSj8H2wwicx4Q15PmBo4")
 
-					Case $Menu_MEmu
+					Case $hMenu_MEmu
 						ShellExecute("http://www.memuplay.com/download.php?file_name=Memu-Setup&from=home_en")
 
-					Case $Menu_Droid4X
+					Case $hMenu_Droid4X
 						ShellExecute("http://dl.haima.me/download/DXDown/win/Z001/Droid4XInstaller.exe")
 
-					Case $Menu_Nox
+					Case $hMenu_Nox
 						ShellExecute("http://en.bignox.com/en/download/fullPackage")
 
-					Case $Menu_LeapDroid
+					Case $hMenu_LeapDroid
 						ShellExecute("http://www.leapdroid.com/installer/current/LeapdroidVMInstallerFull.exe")
 
-					Case $Menu_KOPLAYER
+					Case $hMenu_KOPLAYER
 						ShellExecute("http://down1.koplayer.com/Emulator/koplayer-1.4.1049.exe")
 
-					Case $Menu_iTools
+					Case $hMenu_iTools
 						ShellExecute("http://pro.itools.cn/simulate/")
 
-					Case $Menu_CheckForUpdate
+					Case $hMenu_CheckForUpdate
 
 						$sTempPath = _WinAPI_GetTempFileName(@TempDir)
 						$hUpdateFile = InetGet("https://raw.githubusercontent.com/Fliegerfaust33/SelectBot/master/CheckUpdate.txt", $sTempPath, $INET_FORCERELOAD, $INET_DOWNLOADBACKGROUND)
@@ -176,113 +175,81 @@ Func GUI_Main()
 						InetClose($hUpdateFile)
 						$hGitVersion = FileRead($sTempPath)
 						$sGitVersion = StringStripWS($hGitVersion, 8)
-						$Update = _VersionCompare($sVersion, $sGitVersion)
+						$Update = _VersionCompare($g_sVersion, $sGitVersion)
 
 						Select
 							Case $Update = -1
-								_GUICtrlStatusBar_SetText($Log, "Update found!")
-								$msgUpdate = MsgBox($MB_YESNO, "Update", "New SelectBot Update found" & @CRLF & "New: " & $sGitVersion & @CRLF & "Old: " & $sVersion & @CRLF & "Do you want to download it?", 0, $Gui_Main)
+								_GUICtrlStatusBar_SetText($g_hLog, "Update found!")
+								$msgUpdate = MsgBox($MB_YESNO, "Update", "New SelectBot Update found" & @CRLF & "New: " & $sGitVersion & @CRLF & "Old: " & $g_sVersion & @CRLF & "Do you want to download it?", 0, $g_hGui_Main)
 								If $msgUpdate = $IDYES Then
 									UpdateSelect()
 								EndIf
 							Case $Update = 0
-								_GUICtrlStatusBar_SetText($Log, "Up to date!")
-								MsgBox($MB_OK, "Update", "No new Update found (" & $sVersion & ")")
+								_GUICtrlStatusBar_SetText($g_hLog, "Up to date!")
+								MsgBox($MB_OK, "Update", "No new Update found (" & $g_sVersion & ")")
 							Case $Update = 1
-								_GUICtrlStatusBar_SetText($Log, "Are you a magician?")
-								MsgBox($MB_OK, "Update", "You are using a future Version (" & $sVersion & ")")
+								_GUICtrlStatusBar_SetText($g_hLog, "Are you a magician?")
+								MsgBox($MB_OK, "Update", "You are using a future Version (" & $g_sVersion & ")")
 						EndSelect
 
 						FileDelete($sTempPath)
 
 
-					Case $Menu_Clear
-						$hMsgDelete = MsgBox($MB_YESNO, "Delete Local Files", "This will delete all SelectBot Files (Profiles, Config and Auto Update) Do you want to proceed?", 0, $Gui_Main)
+					Case $hMenu_Clear
+						$hMsgDelete = MsgBox($MB_YESNO, "Delete Local Files", "This will delete all SelectBot Files (Profiles, Config and Auto Update) Do you want to proceed?", 0, $g_hGui_Main)
 						If $hMsgDelete = 6 Then
-							_GUICtrlStatusBar_SetText($Log, "Deleting Files")
+							_GUICtrlStatusBar_SetText($g_hLog, "Deleting Files")
 							FileDelete(@StartupDir & "\SelectBotAutoUpdate.exe")
-							FileDelete($sProfiles)
+							FileDelete($g_sDirProfiles)
 							UpdateList_Main()
-							_GUICtrlStatusBar_SetText($Log, "Done")
-							MsgBox($MB_OK, "Delete Local Files", "Deleted all Files from your Computer!", 0, $Gui_Main)
+							_GUICtrlStatusBar_SetText($g_hLog, "Done")
+							MsgBox($MB_OK, "Delete Local Files", "Deleted all Files from your Computer!", 0, $g_hGui_Main)
 
 						EndIf
 
 
 
 
-					Case $Btn_Setup
-						Local $setupstopped = 0
+					Case $g_hBtn_Setup
+						Local $bSetupStopped = False
 
-						_GUICtrlStatusBar_SetText($Log, "Creating new Setup")
-						WinSetOnTop($Gui_Main, "", $WINDOWS_ONTOP)
+						_GUICtrlStatusBar_SetText($g_hLog, "Creating new Setup")
+						WinSetOnTop($g_hGui_Main, "", $WINDOWS_ONTOP)
+
 						Do
-							GUISetState(@SW_DISABLE, $Gui_Main)
-							GUICtrlSetState($Progress, $GUI_SHOW)
-							_GUICtrlStatusBar_SetText($Log, "Select Profile")
-							Local $profileresult = GUI_Profile()
-							If $profileresult = -1 Then
-								$setupstopped = 1
-								ExitLoop
-							Else
-								GUICtrlSetData($Progress, 25)
-								Local $emulatorResult = GUI_Emulator()
-							EndIf
-							If $emulatorResult = -1 Then
-								$setupstopped = 1
-								ExitLoop
-							Else
-								GUICtrlSetData($Progress, 50)
-								Local $instanceResult = GUI_Instance()
-							EndIf
-							If $instanceResult = -1 Then
-								$setupstopped = 1
-								ExitLoop
-							Else
-								GUICtrlSetData($Progress, 75)
-								GUI_DIR()
-							EndIf
-							_GUICtrlStatusBar_SetText($Log, "Setup Created!")
+							GUISetState(@SW_DISABLE, $g_hGui_Main)
+							$g_aGuiPos_Main = WinGetPos($g_hGui_Main)
+							_GUICtrlStatusBar_SetText($g_hLog, "Select Profile")
+							$bSetupStopped = GUI_Profile()
+							If $bSetupStopped Then ExitLoop
+							GUICtrlSetData($g_hProgress, 25)
+							$bSetupStopped = GUI_Emulator()
+							If $bSetupStopped Then ExitLoop
+							GUICtrlSetData($g_hProgress, 50)
+							$bSetupStopped = GUI_Instance()
+							If $bSetupStopped Then ExitLoop
+							GUICtrlSetData($g_hProgress, 75)
+							$bSetupStopped = GUI_DIR()
+							If $bSetupStopped Then ExitLoop
+							_GUICtrlStatusBar_SetText($g_hLog, "Setup Created!")
 						Until 1
 
-						WinSetOnTop($Gui_Main, "", $WINDOWS_NOONTOP)
-						If $setupstopped = 1 Then _GUICtrlStatusBar_SetText($Log, "Create Setup stopped")
-						$setupstopped = 0
+						WinSetOnTop($g_hGui_Main, "", $WINDOWS_NOONTOP)
+						If $bSetupStopped Then _GUICtrlStatusBar_SetText($g_hLog, "Create Setup stopped")
+						$bSetupStopped = False
 
-						GUICtrlSetData($Progress, 0)
-						GUICtrlSetState($Progress, $GUI_HIDE)
-						GUISetState(@SW_ENABLE, $Gui_Main)
+						GUICtrlSetData($g_hProgress, 0)
+						GUISetState(@SW_ENABLE, $g_hGui_Main)
 						UpdateList_Main()
 
-					Case $Btn_AutoStart
-						GUISetState(@SW_DISABLE, $Gui_Main)
+					Case $g_hBtn_AutoStart
+						GUISetState(@SW_DISABLE, $g_hGui_Main)
+						$g_aGuiPos_Main = WinGetPos($g_hGui_Main)
 						GUI_AutoStart()
-						GUISetState(@SW_ENABLE, $Gui_Main)
+						GUISetState(@SW_ENABLE, $g_hGui_Main)
 
-					Case $Btn_Shortcut
-						Local $createdSC = 0
-						$Lstbx_Sel = _GUICtrlListView_GetSelectedIndices($Listview_Main, True)
-						If $Lstbx_Sel[0] > 0 Then
-							For $i = 1 To $Lstbx_Sel[0]
-								$sLstbx_SelItem = _GUICtrlListView_GetItemText($Listview_Main, $Lstbx_Sel[$i])
-								If $sLstbx_SelItem <> "" Then
-									ReadIni($sLstbx_SelItem)
-									If FileExists($sIniDir & "\" & $sBotFile) = 1 Then
-										FileCreateShortcut($sIniDir & "\" & $sBotFile, @DesktopDir & "\MyBot -" & $sIniProfile & ".lnk", $sIniDir, $sIniProfile & " " & $sIniEmulator & " " & $sIniInstance, "Shortcut for Bot Profile:" & $sIniProfile)
-										$createdSC += 1
-									ElseIf FileExists($sIniDir & "\" & $sBotFileAU3) = 1 Then
-										FileCreateShortcut($sIniDir & "\" & $sBotFileAU3, @DesktopDir & "\MyBot -" & $sIniProfile & ".lnk", $sIniDir, $sIniProfile & " " & $sIniEmulator & " " & $sIniInstance, "Shortcut for Bot Profile:" & $sIniProfile)
-										$createdSC += 1
-									Else
-										MsgBox($MB_OK, "No Bot found", "Couldn't find any Bot in the Directory, please check if you have the mybot.run.exe or the mybot.run.au3 in the Dir and if you selected the right Dir!", 0, $Gui_Main)
-									EndIf
-
-								EndIf
-
-							Next
-							_GUICtrlStatusBar_SetText($Log, "Created " & $createdSC & " Shortcuts")
-							$createdSC = 0
-						EndIf
+					Case $g_hBtn_Shortcut
+						CreateShortcut()
 				EndSwitch
 
 		EndSwitch
@@ -291,44 +258,43 @@ Func GUI_Main()
 EndFunc   ;==>GUI_Main
 
 Func GUI_Profile()
-	$aGuiPos_Main = WinGetPos($Gui_Main, "")
-	$Gui_Profile = GUICreate("Profile", 255, 167, $aGuiPos_Main[0], $aGuiPos_Main[1] + 150, -1, -1, $Gui_Main)
-	$Ipt_Profile = GUICtrlCreateInput("", 24, 72, 201, 21)
-	$Btn_Next = GUICtrlCreateButton("Next step", 72, 120, 97, 25, $WS_GROUP)
-	GUICtrlSetState($Btn_Next, $GUI_DISABLE)
-	$Lbl_Info = GUICtrlCreateLabel("Please type in the full Name of your Profile to continue", 24, 8, 204, 57)
+	$g_hGui_Profile = GUICreate("Profile", 255, 167, $g_aGuiPos_Main[0], $g_aGuiPos_Main[1] + 150, -1, -1, $g_hGui_Main)
+	$hIpt_Profile = GUICtrlCreateInput("", 24, 72, 201, 21)
+	$hBtn_Next = GUICtrlCreateButton("Next step", 72, 120, 97, 25, $WS_GROUP)
+	GUICtrlSetState($hBtn_Next, $GUI_DISABLE)
+	GUICtrlCreateLabel("Please type in the full Name of your Profile to continue", 24, 8, 204, 57)
 	GUISetState()
 
-	Local $BtnEnabled = False
+	Local $bBtnEnabled = False
 
 
 	While 1
 		Switch GUIGetMsg()
 			Case $GUI_EVENT_CLOSE
-				Global $sTypedProfile = GUICtrlRead($Ipt_Profile)
-				IniDelete($sProfiles, $sTypedProfile)
-				GUIDelete($Gui_Profile)
+				$g_sTypedProfile = GUICtrlRead($hIpt_Profile)
+				IniDelete($g_sDirProfiles, $g_sTypedProfile)
+				GUIDelete($g_hGui_Profile)
 				Return -1
-			Case $Btn_Next
-				Global $sTypedProfile = GUICtrlRead($Ipt_Profile)
-				If $sTypedProfile = "" Then
-					_GUICtrlStatusBar_SetText($Log, "Profile cannot be empty!")
+			Case $hBtn_Next
+				$g_sTypedProfile = GUICtrlRead($hIpt_Profile)
+				If $g_sTypedProfile = "" Then
+					_GUICtrlStatusBar_SetText($g_hLog, "Profile cannot be empty!")
 					ContinueLoop
 				Else
-					IniWrite($sProfiles, $sTypedProfile, "Profile", $sTypedProfile)
-					IniWrite($sProfiles, $sTypedProfile, "BotVers", "")
-					GUIDelete($Gui_Profile)
-					_GUICtrlStatusBar_SetText($Log, "Profile: " & $sTypedProfile)
+					IniWrite($g_sDirProfiles, $g_sTypedProfile, "Profile", $g_sTypedProfile)
+					IniWrite($g_sDirProfiles, $g_sTypedProfile, "BotVers", "")
+					GUIDelete($g_hGui_Profile)
+					_GUICtrlStatusBar_SetText($g_hLog, "Profile: " & $g_sTypedProfile)
 					Return 0
 				EndIf
 		EndSwitch
 
-		If $BtnEnabled Then ContinueLoop
-		If GUICtrlRead($Ipt_Profile) Then
+		If $bBtnEnabled Then ContinueLoop
+		If GUICtrlRead($hIpt_Profile) Then
 			ContinueLoop
 		Else
-			GUICtrlSetState($Btn_Next, $GUI_ENABLE)
-			$BtnEnabled = True
+			GUICtrlSetState($hBtn_Next, $GUI_ENABLE)
+			$bBtnEnabled = True
 		EndIf
 	WEnd
 EndFunc   ;==>GUI_Profile
@@ -336,11 +302,11 @@ EndFunc   ;==>GUI_Profile
 
 
 Func GUI_Emulator()
-	$Gui_Emulator = GUICreate("Emulator", 258, 167, $aGuiPos_Main[0], $aGuiPos_Main[1] + 150, -1, -1, $Gui_Main)
-	$Cmb_Emulator = GUICtrlCreateCombo("BlueStacks", 24, 72, 201, 21, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL))
-	GUICtrlSetData($Cmb_Emulator, "BlueStacks2|MEmu|Droid4X|Nox|LeapDroid|KOPLAYER|iTools")
-	$Btn_Next = GUICtrlCreateButton("Next step", 72, 120, 97, 25, $WS_GROUP)
-	$Lbl_Info = GUICtrlCreateLabel("Please select your Emulator", 24, 8, 204, 57)
+	$g_hGui_Emulator = GUICreate("Emulator", 258, 167, $g_aGuiPos_Main[0], $g_aGuiPos_Main[1] + 150, -1, -1, $g_hGui_Main)
+	$hCmb_Emulator = GUICtrlCreateCombo("BlueStacks", 24, 72, 201, 21, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL))
+	GUICtrlSetData(-1, "BlueStacks2|MEmu|Droid4X|Nox|LeapDroid|KOPLAYER|iTools")
+	$hBtn_Next = GUICtrlCreateButton("Next step", 72, 120, 97, 25, $WS_GROUP)
+	GUICtrlCreateLabel("Please select your Emulator", 24, 8, 204, 57)
 	GUISetState()
 
 
@@ -349,23 +315,23 @@ Func GUI_Emulator()
 
 		Switch GUIGetMsg()
 			Case $GUI_EVENT_CLOSE
-				IniDelete($sProfiles, $sTypedProfile)
-				GUIDelete($Gui_Emulator)
+				IniDelete($g_sDirProfiles, $g_sTypedProfile)
+				GUIDelete($g_hGui_Emulator)
 				Return -1
-			Case $Btn_Next
-				Global $sSelectedEmulator = GUICtrlRead($Cmb_Emulator)
-				If EmuInstalled() = True Then
-					IniWrite($sProfiles, $sTypedProfile, "Emulator", $sSelectedEmulator)
-					GUIDelete($Gui_Emulator)
-					_GUICtrlStatusBar_SetText($Log, "Emulator: " & $sSelectedEmulator)
+			Case $hBtn_Next
+				$g_sSelectedEmulator = GUICtrlRead($hCmb_Emulator)
+				If EmuInstalled() Then
+					IniWrite($g_sDirProfiles, $g_sTypedProfile, "Emulator", $g_sSelectedEmulator)
+					GUIDelete($g_hGui_Emulator)
+					_GUICtrlStatusBar_SetText($g_hLog, "Emulator: " & $g_sSelectedEmulator)
 					Return 0
 
-				ElseIf EmuInstalled() = False Then
-					$msgEmulator = MsgBox($MB_YESNO, "Error", "Sorry Chief!" & @CRLF & "Couldn't find " & $sSelectedEmulator & " installed on your Computer. Did you chose the wrong Emulator ? If you are sure you got it installed please click 'Yes'" & @CRLF & @CRLF & "Do you want to continue?", 0, $Gui_Emulator)
+				ElseIf Not EmuInstalled() Then
+					$msgEmulator = MsgBox($MB_YESNO, "Error", "Sorry Chief!" & @CRLF & "Couldn't find " & $g_sSelectedEmulator & " installed on your Computer. Did you chose the wrong Emulator ? If you are sure you got it installed please click 'Yes'" & @CRLF & @CRLF & "Do you want to continue?", 0, $g_hGui_Emulator)
 					If $msgEmulator = $IDYes Then
-						IniWrite($sProfiles, $sTypedProfile, "Emulator", $sSelectedEmulator)
-						GUIDelete($Gui_Emulator)
-						_GUICtrlStatusBar_SetText($Log, "Emulator: " & $sSelectedEmulator)
+						IniWrite($g_sDirProfiles, $g_sTypedProfile, "Emulator", $g_sSelectedEmulator)
+						GUIDelete($g_hGui_Emulator)
+						_GUICtrlStatusBar_SetText($g_hLog, "Emulator: " & $g_sSelectedEmulator)
 						Return 0
 					EndIf
 				EndIf
@@ -377,90 +343,86 @@ EndFunc   ;==>GUI_Emulator
 
 
 Func GUI_Instance()
-	$Gui_Instance = GUICreate("Instance", 258, 167, $aGuiPos_Main[0], $aGuiPos_Main[1] + 150, -1, -1, $Gui_Main)
-	Local $Ipt_Instance = GUICtrlCreateInput("", 24, 72, 201, 21)
-	$Btn_Next = GUICtrlCreateButton("Next step", 72, 120, 97, 25, $WS_GROUP)
-	Global $Lbl_Info = GUICtrlCreateLabel("Please write the Instance Name you want to link", 24, 8, 204, 57)
-	GUISetState(@SW_HIDE, $Gui_Instance)
+	Local $bIsBluestacks = False, $hLbl_Instance = 0
 
-	Local $iBluestacks = 0
+	$g_hGui_Instance = GUICreate("Instance", 258, 167, $g_aGuiPos_Main[0], $g_aGuiPos_Main[1] + 150, -1, -1, $g_hGui_Main)
+	$hIpt_Instance = GUICtrlCreateInput("", 24, 72, 201, 21)
+	$hBtn_Next = GUICtrlCreateButton("Next step", 72, 120, 97, 25, $WS_GROUP)
+	$hLbl_Instance = GUICtrlCreateLabel("Please type in the Instance Name you want to use", 24, 8, 204, 57)
+	GUISetState(@SW_HIDE, $g_hGui_Instance)
 
-
-	If $sSelectedEmulator = "BlueStacks" Or $sSelectedEmulator = "BlueStacks2" Then
-		$iBluestacks = 1
-	ElseIf $sSelectedEmulator = "MEmu" Then
-		GUISetState(@SW_SHOW, $Gui_Instance)
-		GUICtrlSetData($Lbl_Info, "Please type in your MEmu Instance Name! Example: MEmu , MEmu_1, MEmu_2, etc")
-		GUICtrlSetData($Ipt_Instance, "MEmu_")
-	ElseIf $sSelectedEmulator = "Droid4x" Then
-		GUISetState(@SW_SHOW, $Gui_Instance)
-		GUICtrlSetData($Lbl_Info, "Please type in your Droid4x Instance Name! Example: droid4x , droid4x_1, droid4x_2, etc")
-		GUICtrlSetData($Ipt_Instance, "droid4x_")
-	ElseIf $sSelectedEmulator = "Nox" Then
-		GUISetState(@SW_SHOW, $Gui_Instance)
-		GUICtrlSetData($Lbl_Info, "Please type in your Nox Instance Name! Example: nox , nox_1, nox_2, etc")
-		GUICtrlSetData($Ipt_Instance, "nox_")
-	ElseIf $sSelectedEmulator = "LeapDroid" Then
-		GUISetState(@SW_SHOW, $Gui_Instance)
-		GUICtrlSetData($Lbl_Info, "Please type in your LeapDroid Instance Name! Example: vm1 , vm2, etc")
-		GUICtrlSetData($Ipt_Instance, "vm")
-	ElseIf $sSelectedEmulator = "KOPLAYER" Then
-		GUISetState(@SW_SHOW, $Gui_Instance)
-		GUICtrlSetData($Lbl_Info, "Please type in your KOPLAYER Instance Name! Example: KOPLAYER , KOPLAYER_1 , KOPLAYER_2, etc")
-		GUICtrlSetData($Ipt_Instance, "KOPLAYER_")
-	Else
-		GUISetState(@SW_SHOW, $Gui_Instance)
-		GUICtrlSetData($Lbl_Info, "Please type in your iTools Instance Name! Example: iToolsVM , iToolsVM_1 , iToolsVM_2, etc")
-		GUICtrlSetData($Ipt_Instance, "iToolsVM_")
-	EndIf
-
+	Switch $g_sSelectedEmulator
+		Case "BlueStacks" Or "BlueStacks2"
+			$bIsBluestacks = True
+		Case "MEmu"
+			GUISetState(@SW_SHOW, $g_hGui_Instance)
+			GUICtrlSetData($hLbl_Instance, "Please type in your MEmu Instance Name! Example: MEmu , MEmu_1, MEmu_2, etc")
+			GUICtrlSetData($hIpt_Instance, "MEmu_")
+		Case "Droid4X"
+			GUISetState(@SW_SHOW, $g_hGui_Instance)
+			GUICtrlSetData($hLbl_Instance, "Please type in your Droid4x Instance Name! Example: droid4x , droid4x_1, droid4x_2, etc")
+			GUICtrlSetData($hIpt_Instance, "droid4x_")
+		Case "Nox"
+			GUISetState(@SW_SHOW, $g_hGui_Instance)
+			GUICtrlSetData($hLbl_Instance, "Please type in your Nox Instance Name! Example: nox , nox_1, nox_2, etc")
+			GUICtrlSetData($hIpt_Instance, "nox_")
+		Case "LeapDroid"
+			GUISetState(@SW_SHOW, $g_hGui_Instance)
+			GUICtrlSetData($hLbl_Instance, "Please type in your LeapDroid Instance Name! Example: vm1 , vm2, etc")
+			GUICtrlSetData($hIpt_Instance, "vm")
+		Case "KOPLAYER"
+			GUISetState(@SW_SHOW, $g_hGui_Instance)
+			GUICtrlSetData($hLbl_Instance, "Please type in your KOPLAYER Instance Name! Example: KOPLAYER , KOPLAYER_1 , KOPLAYER_2, etc")
+			GUICtrlSetData($hIpt_Instance, "KOPLAYER_")
+		Case "iTools"
+			GUISetState(@SW_SHOW, $g_hGui_Instance)
+			GUICtrlSetData($hLbl_Instance, "Please type in your iTools Instance Name! Example: iToolsVM , iToolsVM_1 , iToolsVM_2, etc")
+			GUICtrlSetData($hIpt_Instance, "iToolsVM_")
+	EndSwitch
 
 
 	While 1
 
-		If $iBluestacks = 1 Then
-			ExitLoop
-
-		EndIf
+		If $bIsBluestacks Then ExitLoop
 
 
 		Switch GUIGetMsg()
 			Case $GUI_EVENT_CLOSE
-				GUIDelete($Gui_Instance)
-				IniDelete($sProfiles, $sTypedProfile)
+				GUIDelete($g_hGui_Instance)
+				IniDelete($g_sDirProfiles, $g_sTypedProfile)
 				Return -1
-			Case $Btn_Next
-				$Inst = GUICtrlRead($Ipt_Instance)
-				$Instances = LaunchConsole(InstanceMgr(), "list vms", 1000)
-				If $sSelectedEmulator <> "LeapDroid" Then
-					If $sSelectedEmulator = "iTools" Then
+			Case $hBtn_Next
+				$Inst = GUICtrlRead($hIpt_Instance)
+				$Instances = LaunchConsole(InstanceMgr($g_sSelectedEmulator), "list vms", 1000)
+				If $g_sSelectedEmulator <> "LeapDroid" Then
+					If $g_sSelectedEmulator = "iTools" Then
 						$Instance = StringRegExp($Instances, "(?i)iToolsVM(?:[_][0-9][0-9])?", 3)
 					Else
-						$Instance = StringRegExp($Instances, "(?i)" & $sSelectedEmulator & "(?:[_][0-9])?", 3)
+						$Instance = StringRegExp($Instances, "(?i)" & $g_sSelectedEmulator & "(?:[_][0-9])?", 3)
 					EndIf
-					If $sSelectedEmulator = "KOPLAYER" And EmuInstalled() = True Then $Instance = _ArrayUnique($Instance, 0, 0, 0, 0)
-				ElseIf $sSelectedEmulator = "LeapDroid" Then
+					If $g_sSelectedEmulator = "KOPLAYER" And EmuInstalled() = True Then $Instance = _ArrayUnique($Instance, 0, 0, 0, 0)
+				ElseIf $g_sSelectedEmulator = "LeapDroid" Then
 					$Instance = StringRegExp($Instances, "(?i)vm\d?", 3)
 				EndIf
 
 				If _ArraySearch($Instance, $Inst, 0, 0, 1) = -1 And $Instance = 1 Then
-					MsgBox($MB_OK, "Error", "Couldn't find any Instances for " & $sSelectedEmulator & "." & " There are only two reasons why." & @CRLF & "#1: You deleted all Instances" & @CRLF & "#2: You don't have the Emulator installed and still pressed YES on the Pop Up before :(", 0, $Gui_Instance)
-					GUIDelete($Gui_Instance)
-					IniDelete($sProfiles, $sTypedProfile)
+					MsgBox($MB_OK, "Error", "Couldn't find any Instances for " & $g_sSelectedEmulator & "." & " There are only two reasons why." & @CRLF & "#1: You deleted all Instances" & @CRLF & "#2: You don't have the Emulator installed and still pressed YES on the Pop Up before :(", 0, $g_hGui_Instance)
+					GUIDelete($g_hGui_Instance)
+					IniDelete($g_sDirProfiles, $g_sTypedProfile)
 					Return -1
 
 				ElseIf _ArraySearch($Instance, $Inst, 0, 0, 1) = -1 Then
-					$Msg2 = MsgBox($MB_YESNO, "Typo ?", "Couldn't find the Instance Name you typed in. Please check your Instances once again and retype it ( Also check the case sensitivity)" & @CRLF & "Here is a list of Instances I could find on your PC:" & @CRLF & @CRLF & _ArrayToString($Instance, @CRLF) & @CRLF & @CRLF & 'If you are sure that you got the Instance right but this Message keeps coming then press "Yes" to continue!' & @CRLF & @CRLF & "Do you want to continue?", 0, $Gui_Instance)
+					$Msg2 = MsgBox($MB_YESNO, "Typo ?", "Couldn't find the Instance Name you typed in. Please check your Instances once again and retype it ( Also check the case sensitivity)" & @CRLF & "Here is a list of Instances I could find on your PC:" & @CRLF & @CRLF & _ArrayToString($Instance, @CRLF) & @CRLF & @CRLF & 'If you are sure that you got the Instance right but this Message keeps coming then press "Yes" to continue!' & @CRLF & @CRLF & "Do you want to continue?", 0, $g_hGui_Instance)
 					If $Msg2 = $IDYES Then
-						IniWrite($sProfiles, $sTypedProfile, "Instance", $Inst)
-						GUIDelete($Gui_Instance)
-						_GUICtrlStatusBar_SetText($Log, "Instance: " & $Inst)
+						IniWrite($g_sDirProfiles, $g_sTypedProfile, "Instance", $Inst)
+						GUIDelete($g_hGui_Instance)
+						_GUICtrlStatusBar_SetText($g_hLog, "Instance: " & $Inst)
 						Return 0
 					EndIf
 				Else
-					IniWrite($sProfiles, $sTypedProfile, "Instance", $Inst)
-					GUIDelete($Gui_Instance)
-					_GUICtrlStatusBar_SetText($Log, "Instance: " & $Inst)
+					IniWrite($g_sDirProfiles, $g_sTypedProfile, "Instance", $Inst)
+					GUIDelete($g_hGui_Instance)
+					_GUICtrlStatusBar_SetText($g_hLog, "Instance: " & $Inst)
 					Return 0
 				EndIf
 
@@ -469,11 +431,11 @@ Func GUI_Instance()
 EndFunc   ;==>GUI_Instance
 
 Func GUI_DIR()
-	$Gui_Dir = GUICreate("Directory", 258, 167, $aGuiPos_Main[0], $aGuiPos_Main[1] + 150, -1, -1, $Gui_Main)
-	$Btn_Folder = GUICtrlCreateButton("Choose Folder", 24, 72, 201, 21)
-	$Btn_Finish = GUICtrlCreateButton("Finish", 72, 120, 97, 25, $WS_GROUP)
-	GUICtrlSetState($Btn_Finish, $GUI_DISABLE)
-	$Lbl_Info = GUICtrlCreateLabel("Please select the MyBot Folder where the mybot.run.exe or .au3 is located at", 24, 8, 204, 57)
+	$g_hGui_Dir = GUICreate("Directory", 258, 167, $g_aGuiPos_Main[0], $g_aGuiPos_Main[1] + 150, -1, -1, $g_hGui_Main)
+	$hBtn_Folder = GUICtrlCreateButton("Choose Folder", 24, 72, 201, 21)
+	$hBtn_Finish = GUICtrlCreateButton("Finish", 72, 120, 97, 25, $WS_GROUP)
+	GUICtrlSetState(-1, $GUI_DISABLE)
+	GUICtrlCreateLabel("Please select the MyBot Folder where the mybot.run.exe or .au3 is located at", 24, 8, 204, 57)
 	GUISetState()
 
 
@@ -481,38 +443,36 @@ Func GUI_DIR()
 	While 1
 
 		Switch GUIGetMsg()
-
-
 			Case $GUI_EVENT_CLOSE
-				IniDelete($sProfiles, $sTypedProfile)
-				GUIDelete($Gui_Dir)
+				IniDelete($g_sDirProfiles, $g_sTypedProfile)
+				GUIDelete($g_hGui_Dir)
 				ExitLoop
 
-			Case $Btn_Folder
-				WinSetOnTop($Gui_Main, "", $WINDOWS_NOONTOP)
+			Case $hBtn_Folder
+				WinSetOnTop($g_hGui_Main, "", $WINDOWS_NOONTOP)
 				Local $sFileSelectFolder = FileSelectFolder("Select your MyBot Folder", "")
 				If @error Then
 					;GUICtrlSetData($Lbl_Log, "File Selection aborted.")
 				Else
-					_GUICtrlStatusBar_SetText($Log, "Dir: " & $sFileSelectFolder)
+					_GUICtrlStatusBar_SetText($g_hLog, "Dir: " & $sFileSelectFolder)
 				EndIf
-				WinSetOnTop($Gui_Main, "", $WINDOWS_ONTOP)
+				WinSetOnTop($g_hGui_Main, "", $WINDOWS_ONTOP)
 
 
 				If $sFileSelectFolder = "" Then
 					ContinueLoop
-				ElseIf FileExists($sFileSelectFolder & "\" & $sBotFile) = 0 And FileExists($sFileSelectFolder & "\" & $sBotFileAU3) = 0 Then
-					MsgBox($MB_OK, "Error", "Looks like there is no runable mybot file in the Folder? Did you select the right folder or is in the Folder the mybot.run.exe or mybot.run.au3 renamed? Please select another Folder or rename Files!", 0, $Gui_Dir)
+				ElseIf FileExists($sFileSelectFolder & "\" & $g_sBotFile) = 0 And FileExists($sFileSelectFolder & "\" & $g_sBotFileAU3) = 0 Then
+					MsgBox($MB_OK, "Error", "Looks like there is no runable mybot file in the Folder? Did you select the right folder or is in the Folder the mybot.run.exe or mybot.run.au3 renamed? Please select another Folder or rename Files!", 0, $g_hGui_Dir)
 					ContinueLoop
 				Else
-					GUICtrlSetData($Progress, 100)
-					GUICtrlSetState($Btn_Finish, $GUI_ENABLE)
+					GUICtrlSetData($g_hProgress, 100)
+					GUICtrlSetState($hBtn_Finish, $GUI_ENABLE)
 				EndIf
 
-			Case $Btn_Finish
+			Case $hBtn_Finish
 
-				IniWrite($sProfiles, $sTypedProfile, "Dir", $sFileSelectFolder)
-				GUIDelete($Gui_Dir)
+				IniWrite($g_sDirProfiles, $g_sTypedProfile, "Dir", $sFileSelectFolder)
+				GUIDelete($g_hGui_Dir)
 				ExitLoop
 
 
@@ -528,46 +488,45 @@ EndFunc   ;==>GUI_DIR
 
 Func GUI_Edit()
 
-	$aLstbx_GetSelTxt = _GUICtrlListView_GetSelectedIndices($Listview_Main, True)
-	$sLstbx_SelItem = _GUICtrlListView_GetItemText($Listview_Main, $aLstbx_GetSelTxt[1])
+	$aLstbx_GetSelTxt = _GUICtrlListView_GetSelectedIndices($g_hListview_Main, True)
+	$sLstbx_SelItem = _GUICtrlListView_GetItemText($g_hListview_Main, $aLstbx_GetSelTxt[1])
 	ReadIni($sLstbx_SelItem)
-	$sSelectedFolder = $sIniDir
-	$aGuiPos_Main = WinGetPos($Gui_Main, "")
-	$Gui_Edit = GUICreate("Edit INI", 258, 187, $aGuiPos_Main[0], $aGuiPos_Main[1] + 150, -1, -1, $Gui_Main)
-	$Ipt_Profile = GUICtrlCreateInput($sIniProfile, 112, 8, 137, 21)
-	$Cmb_Emulator = GUICtrlCreateCombo($sIniEmulator, 112, 40, 137, 21, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL))
-	$Ipt_Instance = GUICtrlCreateInput($sIniInstance, 112, 72, 137, 21)
-	$Btn_Folder = GUICtrlCreateButton("Open Dialog", 112, 105, 137, 23, $WS_GROUP)
-	$Lbl_Profile = GUICtrlCreateLabel("Profile Name:", 8, 8, 95, 17)
-	$Lbl_Emulator = GUICtrlCreateLabel("Emulator:", 8, 40, 95, 17)
-	$Lbl_Instance = GUICtrlCreateLabel("Instance:", 8, 72, 95, 17)
-	$Lbl_Dir = GUICtrlCreateLabel("Directory:", 8, 104, 95, 17)
-	$Btn_Save = GUICtrlCreateButton("Save and Close", 76, 150, 97, 25, $WS_GROUP)
+	$sSelectedFolder = $g_sIniDir
+	$g_hGUI_Edit = GUICreate("Edit INI", 258, 187, $g_aGuiPos_Main[0], $g_aGuiPos_Main[1] + 150, -1, -1, $g_hGui_Main)
+	$hIpt_Profile = GUICtrlCreateInput($g_sIniProfile, 112, 8, 137, 21)
+	$hCmb_Emulator = GUICtrlCreateCombo($g_sIniEmulator, 112, 40, 137, 21, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL))
+	$hIpt_Instance = GUICtrlCreateInput($g_sIniInstance, 112, 72, 137, 21)
+	$hBtn_Folder = GUICtrlCreateButton("Open Dialog", 112, 105, 137, 23, $WS_GROUP)
+	GUICtrlCreateLabel("Profile Name:", 8, 8, 95, 17)
+	GUICtrlCreateLabel("Emulator:", 8, 40, 95, 17)
+	GUICtrlCreateLabel("Instance:", 8, 72, 95, 17)
+	GUICtrlCreateLabel("Directory:", 8, 104, 95, 17)
+	$hBtn_Save = GUICtrlCreateButton("Save and Close", 76, 150, 97, 25, $WS_GROUP)
 	GUISetState()
 
 
 
-	Switch $sIniEmulator
+	Switch $g_sIniEmulator
 		Case "BlueStacks"
-			GUICtrlSetData($Cmb_Emulator, "BlueStacks2|MEmu|Droid4X|Nox|LeapDroid|KOPLAYER|iTools")
-			GUICtrlSetState($Ipt_Instance, $GUI_DISABLE)
+			GUICtrlSetData($hCmb_Emulator, "BlueStacks2|MEmu|Droid4X|Nox|LeapDroid|KOPLAYER|iTools")
+			GUICtrlSetState($hIpt_Instance, $GUI_DISABLE)
 		Case "BlueStacks2"
-			GUICtrlSetData($Cmb_Emulator, "BlueStacks|MEmu|Droid4X|Nox|LeapDroid|KOPLAYER|iTools")
-			GUICtrlSetState($Ipt_Instance, $GUI_DISABLE)
+			GUICtrlSetData($hCmb_Emulator, "BlueStacks|MEmu|Droid4X|Nox|LeapDroid|KOPLAYER|iTools")
+			GUICtrlSetState($hIpt_Instance, $GUI_DISABLE)
 		Case "MEmu"
-			GUICtrlSetData($Cmb_Emulator, "BlueStacks|BlueStacks2|Droid4X|Nox|LeapDroid|KOPLAYER|iTools")
+			GUICtrlSetData($hCmb_Emulator, "BlueStacks|BlueStacks2|Droid4X|Nox|LeapDroid|KOPLAYER|iTools")
 		Case "Droid4X"
-			GUICtrlSetData($Cmb_Emulator, "BlueStacks|BlueStacks2|MEmu|Nox|LeapDroid|KOPLAYER|iTools")
+			GUICtrlSetData($hCmb_Emulator, "BlueStacks|BlueStacks2|MEmu|Nox|LeapDroid|KOPLAYER|iTools")
 		Case "Nox"
-			GUICtrlSetData($Cmb_Emulator, "BlueStacks|BlueStacks2|MEmu|Droid4X|LeapDroid|KOPLAYER|iTools")
+			GUICtrlSetData($hCmb_Emulator, "BlueStacks|BlueStacks2|MEmu|Droid4X|LeapDroid|KOPLAYER|iTools")
 		Case "LeapDroid"
-			GUICtrlSetData($Cmb_Emulator, "BlueStacks|BlueStacks2|MEmu|Droid4X|Nox|KOPLAYER|iTools")
+			GUICtrlSetData($hCmb_Emulator, "BlueStacks|BlueStacks2|MEmu|Droid4X|Nox|KOPLAYER|iTools")
 		Case "KOPLAYER"
-			GUICtrlSetData($Cmb_Emulator, "BlueStacks|BlueStacks2|MEmu|Droid4X|Nox|LeapDroid|iTools")
+			GUICtrlSetData($hCmb_Emulator, "BlueStacks|BlueStacks2|MEmu|Droid4X|Nox|LeapDroid|iTools")
 		Case "iTools"
-			GUICtrlSetData($Cmb_Emulator, "BlueStacks|BlueStacks2|MEmu|Droid4X|Nox|LeapDroid|KOPLAYER")
+			GUICtrlSetData($hCmb_Emulator, "BlueStacks|BlueStacks2|MEmu|Droid4X|Nox|LeapDroid|KOPLAYER")
 		Case Else
-			MsgBox($MB_OK, "Error", "Oops, as it looks like you changed Data in the Config File.Pleae delete all corrupted Sections!", 0, $Gui_Edit)
+			MsgBox($MB_OK, "Error", "Oops, as it looks like you changed Data in the Config File.Pleae delete all corrupted Sections!", 0, $g_hGUI_Edit)
 	EndSwitch
 
 
@@ -576,51 +535,49 @@ Func GUI_Edit()
 
 		Switch GUIGetMsg()
 			Case $GUI_EVENT_CLOSE
-				GUIDelete($Gui_Edit)
+				GUIDelete($g_hGUI_Edit)
 				ExitLoop
 
-			Case $Cmb_Emulator
-				$sSelectedEmulator = GUICtrlRead($Cmb_Emulator)
+			Case $hCmb_Emulator
+				$sSelectedEmulator = GUICtrlRead($hCmb_Emulator)
 				If $sSelectedEmulator = "BlueStacks" Or $sSelectedEmulator = "BlueStacks2" Then
-					GUICtrlSetState($Ipt_Instance, $GUI_DISABLE)
-					GUICtrlSetData($Ipt_Instance, "")
+					GUICtrlSetState($hIpt_Instance, $GUI_DISABLE)
+					GUICtrlSetData($hIpt_Instance, "")
 				ElseIf $sSelectedEmulator <> "BlueStacks" And "BlueStacks2" Then
-					GUICtrlSetState($Ipt_Instance, $GUI_ENABLE)
+					GUICtrlSetState($hIpt_Instance, $GUI_ENABLE)
 					Switch $sSelectedEmulator
 						Case "MEmu"
-							GUICtrlSetData($Ipt_Instance, "MEmu_")
+							GUICtrlSetData($hIpt_Instance, "MEmu_")
 						Case "Droid4X"
-							GUICtrlSetData($Ipt_Instance, "droid4x_")
+							GUICtrlSetData($hIpt_Instance, "droid4x_")
 						Case "Nox"
-							GUICtrlSetData($Ipt_Instance, "Nox_")
+							GUICtrlSetData($hIpt_Instance, "Nox_")
 						Case "LeapDroid"
-							GUICtrlSetData($Ipt_Instance, "vm")
+							GUICtrlSetData($hIpt_Instance, "vm")
 						Case "KOPLAYER"
-							GUICtrlSetData($Ipt_Instance, "KOPLAYER_")
+							GUICtrlSetData($hIpt_Instance, "KOPLAYER_")
 						Case "iTools"
-							GUICtrlSetData($Ipt_Instance, "iToolsVM_")
+							GUICtrlSetData($hIpt_Instance, "iToolsVM_")
 						Case Else
-							MsgBox($MB_OK, "Error", "Oops, as it looks like you changed Data in the Config File. Please revert it or delete all corrupted Sections!", 0, $Gui_Edit)
+							MsgBox($MB_OK, "Error", "Oops, as it looks like you changed Data in the Config File. Please revert it or delete all corrupted Sections!", 0, $g_hGUI_Edit)
 					EndSwitch
 				EndIf
 
 
-			Case $Btn_Folder
-				Local $sSelectedFolder = FileSelectFolder("Select your MyBot Folder", $sIniDir)
+			Case $hBtn_Folder
+				Local $sSelectedFolder = FileSelectFolder("Select your MyBot Folder", $g_sIniDir)
 
-			Case $Btn_Save
-
-				$sSelectedProfile = GUICtrlRead($Ipt_Profile)
-				$sSelectedEmulator = GUICtrlRead($Cmb_Emulator)
-				$sSelectedInstance = GUICtrlRead($Ipt_Instance)
-				IniDelete(@MyDocumentsDir & "\Profiles.ini", $aLstbx_GetSelTxt[1])
-				IniWrite($sProfiles, $sLstbx_SelItem, "Profile", $sSelectedProfile)
-				IniWrite($sProfiles, $sLstbx_SelItem, "Emulator", $sSelectedEmulator)
-				IniWrite($sProfiles, $sLstbx_SelItem, "Instance", $sSelectedInstance)
-				IniWrite($sProfiles, $sLstbx_SelItem, "Dir", $sSelectedFolder)
-				GUIDelete($Gui_Edit)
+			Case $hBtn_Save
+				$sSelectedProfile = GUICtrlRead($hIpt_Profile)
+				$sSelectedEmulator = GUICtrlRead($hCmb_Emulator)
+				$sSelectedInstance = GUICtrlRead($hIpt_Instance)
+				IniDelete($g_sDirProfiles, $sLstbx_SelItem)
+				IniWrite($g_sDirProfiles, $sSelectedProfile, "Profile", $sSelectedProfile)
+				IniWrite($g_sDirProfiles, $sSelectedProfile, "Emulator", $sSelectedEmulator)
+				IniWrite($g_sDirProfiles, $sSelectedProfile, "Instance", $sSelectedInstance)
+				IniWrite($g_sDirProfiles, $sSelectedProfile, "Dir", $sSelectedFolder)
+				GUIDelete($g_hGUI_Edit)
 				ExitLoop
-
 		EndSwitch
 
 	WEnd
@@ -628,29 +585,28 @@ EndFunc   ;==>GUI_Edit
 
 
 Func GUI_AutoStart()
+	Local $sText = ""
 
-	$aGuiPos_Main = WinGetPos($Gui_Main, "")
-	$Gui_AutoStart = GUICreate("Auto Start Setup", 258, 187, $aGuiPos_Main[0], $aGuiPos_Main[1] + 150, -1, -1, $Gui_Main)
-	$Lst_AutoStart = GUICtrlCreateList("", 8, 48, 241, 84, BitOR($LBS_SORT, $LBS_NOTIFY, $LBS_NOSEL))
-	$Lbl_Info = GUICtrlCreateLabel("Add or Remove a Profile from Autostart" & @CRLF & "These are currently in the Folder:", 8, 8, 220, 34)
-	$Btn_Add = GUICtrlCreateButton("Add", 8, 144, 97, 25, $WS_GROUP)
-	Local $Btn_Remove = GUICtrlCreateButton("Remove", 152, 144, 97, 25, $WS_GROUP)
+	$g_hGUI_AutoStart = GUICreate("Auto Start Setup", 258, 187, $g_aGuiPos_Main[0], $g_aGuiPos_Main[1] + 150, -1, -1, $g_hGui_Main)
+	$g_hLst_AutoStart = GUICtrlCreateList("", 8, 48, 241, 84, BitOR($LBS_SORT, $LBS_NOTIFY, $LBS_NOSEL))
+	GUICtrlCreateLabel("Add or Remove a Profile from Autostart" & @CRLF & "These are currently in the Folder:", 8, 8, 220, 34)
+	$hBtn_Add = GUICtrlCreateButton("Add", 8, 144, 97, 25, $WS_GROUP)
+	$hBtn_Remove = GUICtrlCreateButton("Remove", 152, 144, 97, 25, $WS_GROUP)
 	GUISetState()
 
-	$sText = ""
 
-	$Lstbx_Sel = _GUICtrlListView_GetSelectedIndices($Listview_Main, True)
+	$Lstbx_Sel = _GUICtrlListView_GetSelectedIndices($g_hListview_Main, True)
 	If $Lstbx_Sel[0] > 0 Then
 		For $i = 1 To $Lstbx_Sel[0]
-			$sLstbx_SelItem = _GUICtrlListView_GetItemText($Listview_Main, $Lstbx_Sel[$i])
+			$sLstbx_SelItem = _GUICtrlListView_GetItemText($g_hListview_Main, $Lstbx_Sel[$i])
 			If $sLstbx_SelItem <> "" Then
 				ReadIni($sLstbx_SelItem)
-				If FileExists(@StartupDir & "\MyBot -" & $sIniProfile & ".lnk") = 0 Then
-					GUICtrlSetState($Btn_Add, $GUI_ENABLE)
-					GUICtrlSetState($Btn_Remove, $GUI_DISABLE)
+				If FileExists(@StartupDir & "\MyBot -" & $g_sIniProfile & ".lnk") = 0 Then
+					GUICtrlSetState($hBtn_Add, $GUI_ENABLE)
+					GUICtrlSetState($hBtn_Remove, $GUI_DISABLE)
 				Else
-					GUICtrlSetState($Btn_Add, $GUI_DISABLE)
-					GUICtrlSetState($Btn_Remove, $GUI_ENABLE)
+					GUICtrlSetState($hBtn_Add, $GUI_DISABLE)
+					GUICtrlSetState($hBtn_Remove, $GUI_ENABLE)
 				EndIf
 			EndIf
 		Next
@@ -664,32 +620,32 @@ Func GUI_AutoStart()
 		Switch GUIGetMsg()
 
 			Case $GUI_EVENT_CLOSE
-				GUIDelete($Gui_AutoStart)
+				GUIDelete($g_hGUI_AutoStart)
 				ExitLoop
 
-			Case $Btn_Add
+			Case $hBtn_Add
 
-				$Lstbx_Sel = _GUICtrlListView_GetSelectedIndices($Listview_Main, True)
+				$Lstbx_Sel = _GUICtrlListView_GetSelectedIndices($g_hListview_Main, True)
 				If $Lstbx_Sel[0] > 0 Then
 					For $i = 1 To $Lstbx_Sel[0]
-						$sLstbx_SelItem = _GUICtrlListView_GetItemText($Listview_Main, $Lstbx_Sel[$i])
+						$sLstbx_SelItem = _GUICtrlListView_GetItemText($g_hListview_Main, $Lstbx_Sel[$i])
 						If $sLstbx_SelItem <> "" Then
 							ReadIni($sLstbx_SelItem)
-							If FileExists($sIniDir & "\" & $sBotFile) = 1 Then
-								$sBotFile = $sBotFile
-							ElseIf FileExists($sIniDir & "\" & $sBotFileAU3) = 1 Then
-								$sBotFile = $sBotFileAU3
+							If FileExists($g_sIniDir & "\" & $g_sBotFile) = 1 Then
+								$g_sBotFile = $g_sBotFile
+							ElseIf FileExists($g_sIniDir & "\" & $g_sBotFileAU3) = 1 Then
+								$g_sBotFile = $g_sBotFileAU3
 							EndIf
 
-							FileCreateShortcut($sIniDir & "\" & $sBotFile, @StartupDir & "\MyBot -" & $sIniProfile & ".lnk", $sIniDir, $sIniProfile & " " & $sIniEmulator & " " & $sIniInstance, "Shortcut for Bot Profile:" & $sIniProfile)
+							FileCreateShortcut($g_sIniDir & "\" & $g_sBotFile, @StartupDir & "\MyBot -" & $g_sIniProfile & ".lnk", $g_sIniDir, $g_sIniProfile & " " & $g_sIniEmulator & " " & $g_sIniInstance, "Shortcut for Bot Profile:" & $g_sIniProfile)
 
 							UpdateList_AS()
-							If FileExists(@StartupDir & "\MyBot -" & $sIniProfile & ".lnk") = 0 Then
-								GUICtrlSetState($Btn_Remove, $GUI_DISABLE)
-								GUICtrlSetState($Btn_Add, $GUI_ENABLE)
+							If FileExists(@StartupDir & "\MyBot -" & $g_sIniProfile & ".lnk") = 0 Then
+								GUICtrlSetState($hBtn_Remove, $GUI_DISABLE)
+								GUICtrlSetState($hBtn_Add, $GUI_ENABLE)
 							Else
-								GUICtrlSetState($Btn_Remove, $GUI_ENABLE)
-								GUICtrlSetState($Btn_Add, $GUI_DISABLE)
+								GUICtrlSetState($hBtn_Remove, $GUI_ENABLE)
+								GUICtrlSetState($hBtn_Add, $GUI_DISABLE)
 							EndIf
 						EndIf
 					Next
@@ -697,27 +653,27 @@ Func GUI_AutoStart()
 
 
 
-			Case $Btn_Remove
+			Case $hBtn_Remove
 
-				$Lstbx_Sel = _GUICtrlListView_GetSelectedIndices($Listview_Main, True)
+				$Lstbx_Sel = _GUICtrlListView_GetSelectedIndices($g_hListview_Main, True)
 				If $Lstbx_Sel[0] > 0 Then
 					For $i = 1 To $Lstbx_Sel[0]
-						$sLstbx_SelItem = _GUICtrlListView_GetItemText($Listview_Main, $Lstbx_Sel[$i])
+						$sLstbx_SelItem = _GUICtrlListView_GetItemText($g_hListview_Main, $Lstbx_Sel[$i])
 						If $sLstbx_SelItem <> "" Then
 							ReadIni($sLstbx_SelItem)
-							If FileExists(@StartupDir & "\MyBot -" & $sIniProfile & ".lnk") = 1 Then
-								FileDelete(@StartupDir & "\MyBot -" & $sIniProfile & ".lnk")
-								GUICtrlSetData($Lst_AutoStart, "")
+							If FileExists(@StartupDir & "\MyBot -" & $g_sIniProfile & ".lnk") = 1 Then
+								FileDelete(@StartupDir & "\MyBot -" & $g_sIniProfile & ".lnk")
+								GUICtrlSetData($g_hLst_AutoStart, "")
 
 							EndIf
 
 							UpdateList_AS()
-							If FileExists(@StartupDir & "\MyBot -" & $sIniProfile & ".lnk") = 0 Then
-								GUICtrlSetState($Btn_Remove, $GUI_DISABLE)
-								GUICtrlSetState($Btn_Add, $GUI_ENABLE)
+							If FileExists(@StartupDir & "\MyBot -" & $g_sIniProfile & ".lnk") = 0 Then
+								GUICtrlSetState($hBtn_Remove, $GUI_DISABLE)
+								GUICtrlSetState($hBtn_Add, $GUI_ENABLE)
 							Else
-								GUICtrlSetState($Btn_Remove, $GUI_ENABLE)
-								GUICtrlSetState($Btn_Add, $GUI_DISABLE)
+								GUICtrlSetState($hBtn_Remove, $GUI_ENABLE)
+								GUICtrlSetState($hBtn_Add, $GUI_DISABLE)
 							EndIf
 						EndIf
 
@@ -731,56 +687,88 @@ Func GUI_AutoStart()
 EndFunc   ;==>GUI_AutoStart
 
 Func RunSetup()
-	$Lstbx_Sel = _GUICtrlListView_GetSelectedIndices($Listview_Main, True)
+	$Lstbx_Sel = _GUICtrlListView_GetSelectedIndices($g_hListview_Main, True)
 	If $Lstbx_Sel[0] > 0 Then
 		For $i = 1 To $Lstbx_Sel[0]
-			$sLstbx_SelItem = _GUICtrlListView_GetItemText($Listview_Main, $Lstbx_Sel[$i])
+			$sLstbx_SelItem = _GUICtrlListView_GetItemText($g_hListview_Main, $Lstbx_Sel[$i])
 			If $sLstbx_SelItem <> "" Then
 				ReadIni($sLstbx_SelItem)
-				_GUICtrlStatusBar_SetText($Log, "Running: " & $sIniProfile)
-				If FileExists($sIniDir & "\" & $sBotFile) = 1 Then
-					ShellExecute($sBotFile, $sIniProfile & " " & $sIniEmulator & " " & $sIniInstance, $sIniDir)
-				ElseIf FileExists($sIniDir & "\" & $sBotFileAU3) = 1 Then
-					ShellExecute($sBotFileAU3, $sIniProfile & " " & $sIniEmulator & " " & $sIniInstance, $sIniDir)
+				_GUICtrlStatusBar_SetText($g_hLog, "Running: " & $g_sIniProfile)
+				If FileExists($g_sIniDir & "\" & $g_sBotFile) = 1 Then
+					ShellExecute($g_sBotFile, $g_sIniProfile & " " & $g_sIniEmulator & " " & $g_sIniInstance, $g_sIniDir)
+				ElseIf FileExists($g_sIniDir & "\" & $g_sBotFileAU3) = 1 Then
+					ShellExecute($g_sBotFileAU3, $g_sIniProfile & " " & $g_sIniEmulator & " " & $g_sIniInstance, $g_sIniDir)
 				Else
-					MsgBox($MB_OK, "No Bot found", "Couldn't find any Bot in the Directory, please check if you have the mybot.run.exe or the mybot.run.au3 in the Dir and if you selected the right Dir!", 0, $Gui_Main)
-					_GUICtrlStatusBar_SetText($Log, "Error while Running")
+					MsgBox($MB_OK, "No Bot found", "Couldn't find any Bot in the Directory, please check if you have the mybot.run.exe or the mybot.run.au3 in the Dir and if you selected the right Dir!", 0, $g_hGui_Main)
+					_GUICtrlStatusBar_SetText($g_hLog, "Error while Running")
 				EndIf
 			EndIf
 		Next
 	EndIf
 EndFunc   ;==>RunSetup
 
-Func UpdateList_Main() ; Main List Updating
-	GetBotVers()
-	_GUICtrlListView_BeginUpdate($Listview_Main)
-	_GUICtrlListView_DeleteAllItems($Listview_Main)
+Func CreateShortcut()
+	Local $iCreatedSC = 0, $sBotFileName, $hSC
+	$Lstbx_Sel = _GUICtrlListView_GetSelectedIndices($g_hListview_Main, True)
+	If $Lstbx_Sel[0] > 0 Then
+		For $i = 1 To $Lstbx_Sel[0]
+			$sLstbx_SelItem = _GUICtrlListView_GetItemText($g_hListview_Main, $Lstbx_Sel[$i])
+			If $sLstbx_SelItem <> "" Then
+				ReadIni($sLstbx_SelItem)
+				If FileExists($g_sIniDir & "\" & $g_sBotFile) Then
+					$sBotFileName = $g_sBotFile
+				ElseIf FileExists($g_sIniDir & "\" & $g_sBotFileAU3) Then
+					$sBotFileName = $g_sBotFileAU3
+				Else
+					MsgBox($MB_OK, "No Bot found", "Couldn't find any Bot in the Directory, please check if you have the mybot.run.exe or the mybot.run.au3 in the Dir and if you selected the right Dir!", 0, $g_hGui_Main)
+				EndIf
+				$hSC = FileCreateShortcut($g_sIniDir & "\" & $sBotFileName, @DesktopDir & "\MyBot -" & $g_sIniProfile & ".lnk", $g_sIniDir, $g_sIniProfile & " " & $g_sIniEmulator & " " & $g_sIniInstance, "Shortcut for Bot Profile:" & $g_sIniProfile)
+				If $hSC = 1 Then $iCreatedSC += 1
 
-	Local $sections = IniReadSectionNames($sProfiles)
-	Local $y = 0
-	For $i = 1 To UBound($sections, 1) - 1
-		If $sections[$i] <> "Options" Then
-			_GUICtrlListView_AddItem($Listview_Main, $sections[$i])
-			$sectionVers = IniRead($sProfiles, $sections[$i], "BotVers", "")
-			_GUICtrlListView_AddSubItem($Listview_Main, $y, $sectionVers, 1)
-			$y += 1
+			EndIf
+
+		Next
+		If $iCreatedSC = 1 Then
+			_GUICtrlStatusBar_SetText($g_hLog, "Created " & $iCreatedSC & " Shortcut")
+		ElseIf $iCreatedSC > 1 Then
+			_GUICtrlStatusBar_SetText($g_hLog, "Created " & $iCreatedSC & " Shortcuts")
+		EndIf
+		$iCreatedSC = 0
+	EndIf
+EndFunc   ;==>CreateShortcut
+
+Func UpdateList_Main() ; Main List Updating
+	Local $j = 0, $aSections
+
+	GetBotVers()
+
+	_GUICtrlListView_BeginUpdate($g_hListview_Main)
+	_GUICtrlListView_DeleteAllItems($g_hListview_Main)
+	$aSections = IniReadSectionNames($g_sDirProfiles)
+	For $i = 1 To UBound($aSections, 1) - 1
+		If $aSections[$i] <> "Options" Then
+			_GUICtrlListView_AddItem($g_hListview_Main, $aSections[$i])
+			$iSectionVers = IniRead($g_sDirProfiles, $aSections[$i], "BotVers", "")
+			_GUICtrlListView_AddSubItem($g_hListview_Main, $j, $iSectionVers, 1)
+			$j += 1
 		EndIf
 	Next
-	$y = 0
-	_GUICtrlListView_EndUpdate($Listview_Main)
+	_GUICtrlListView_EndUpdate($g_hListview_Main)
 EndFunc   ;==>UpdateList_Main
 
 
 
 Func UpdateList_AS()
-	GUICtrlSetData($Lst_AutoStart, "")
-	$aProfiles = IniReadSectionNames($sProfiles)
+	Local $aSections
+
+	GUICtrlSetData($g_hLst_AutoStart, "")
+	$aSections = IniReadSectionNames($g_sDirProfiles)
 	If @error <> 0 Then
 	Else
-		For $i = 1 To $aProfiles[0]
-			$sProfiles2 = IniRead($sProfiles, $aProfiles[$i], "Profile", "")
-			If FileExists(@StartupDir & "\MyBot -" & $sProfiles2 & ".lnk") Then
-				GUICtrlSetData($Lst_AutoStart, $sProfiles2)
+		For $i = 1 To $aSections[0]
+			$sProfiles = IniRead($g_sDirProfiles, $aSections[$i], "Profile", "")
+			If FileExists(@StartupDir & "\MyBot -" & $sProfiles & ".lnk") Then
+				GUICtrlSetData($g_hLst_AutoStart, $sProfiles)
 			EndIf
 		Next
 	EndIf
@@ -788,10 +776,12 @@ Func UpdateList_AS()
 EndFunc   ;==>UpdateList_AS
 
 Func GetBotVers()
-	Local $sections = IniReadSectionNames($sProfiles)
-	For $i = 1 To UBound($sections, 1) - 1
-		ReadIni($sections[$i])
-		$hBotVers = FileOpen($sIniDir & "\mybot.run.au3")
+	Local $aSections
+
+	$aSections = IniReadSectionNames($g_sDirProfiles)
+	For $i = 1 To UBound($aSections, 1) - 1
+		ReadIni($aSections[$i])
+		$hBotVers = FileOpen($g_sIniDir & "\mybot.run.au3")
 		$sBotVers = FileReadLine($hBotVers, 38)
 		$aBotVers = StringSplit($sBotVers, '"')
 		If UBound($aBotVers) > 2 Then
@@ -800,8 +790,8 @@ Func GetBotVers()
 			$sBotVers = ""
 		EndIf
 		FileClose($hBotVers)
-		If $sections[$i] <> "Options" Then
-			IniWrite($sProfiles, $sections[$i], "BotVers", $sBotVers)
+		If $aSections[$i] <> "Options" Then
+			IniWrite($g_sDirProfiles, $aSections[$i], "BotVers", $sBotVers)
 		EndIf
 	Next
 EndFunc   ;==>GetBotVers
@@ -810,40 +800,40 @@ EndFunc   ;==>GetBotVers
 
 Func ReadIni($sSelectedProfile)
 
-	$sIniProfile = IniRead($sProfiles, $sSelectedProfile, "Profile", "")
-	If StringRegExp($sIniProfile, " ") = 1 Then
-		$sIniProfile = '"' & $sIniProfile & '"'
+	$g_sIniProfile = IniRead($g_sDirProfiles, $sSelectedProfile, "Profile", "")
+	If StringRegExp($g_sIniProfile, " ") = 1 Then
+		$g_sIniProfile = '"' & $g_sIniProfile & '"'
 	EndIf
-	$sIniEmulator = IniRead($sProfiles, $sSelectedProfile, "Emulator", "")
-	$sIniInstance = IniRead($sProfiles, $sSelectedProfile, "Instance", "")
-	$sIniDir = IniRead($sProfiles, $sSelectedProfile, "Dir", "")
+	$g_sIniEmulator = IniRead($g_sDirProfiles, $sSelectedProfile, "Emulator", "")
+	$g_sIniInstance = IniRead($g_sDirProfiles, $sSelectedProfile, "Instance", "")
+	$g_sIniDir = IniRead($g_sDirProfiles, $sSelectedProfile, "Dir", "")
 
 EndFunc   ;==>ReadIni
 
 
 
 Func WM_CONTEXTMENU($hWnd, $msg, $wParam, $lParam)
-	Local $tPoint = _WinAPI_GetMousePos(True, GUICtrlGetHandle($Listview_Main))
+	Local $tPoint = _WinAPI_GetMousePos(True, GUICtrlGetHandle($g_hListview_Main))
 	Local $iY = DllStructGetData($tPoint, "Y")
 
-	$lst2 = _GUICtrlListView_GetItemCount($Listview_Main)
+	$lst2 = _GUICtrlListView_GetItemCount($g_hListview_Main)
 	If $lst2 > 0 Then
 		For $i = 0 To 50
-			$iLstbx_GetSel = _GUICtrlListView_GetSelectedCount($Listview_Main)
+			$iLstbx_GetSel = _GUICtrlListView_GetSelectedCount($g_hListview_Main)
 			If $iLstbx_GetSel > 1 Then
-				_GUICtrlMenu_SetItemDisabled($Context_Main, 1)
-				_GUICtrlMenu_SetItemDisabled($Context_Main, 3)
+				_GUICtrlMenu_SetItemDisabled($g_hContext_Main, 1)
+				_GUICtrlMenu_SetItemDisabled($g_hContext_Main, 3)
 			ElseIf $iLstbx_GetSel < 2 Then
-				_GUICtrlMenu_SetItemEnabled($Context_Main, 1)
-				_GUICtrlMenu_SetItemEnabled($Context_Main, 3)
+				_GUICtrlMenu_SetItemEnabled($g_hContext_Main, 1)
+				_GUICtrlMenu_SetItemEnabled($g_hContext_Main, 3)
 			EndIf
 
-			Local $aRect = _GUICtrlListView_GetItemRect($Listview_Main, $i)
+			Local $aRect = _GUICtrlListView_GetItemRect($g_hListview_Main, $i)
 			If ($iY >= $aRect[1]) And ($iY <= $aRect[3]) Then _ContextMenu($i)
 		Next
 		Return $GUI_RUNDEFMSG
 
-	ElseIf _GUICtrlListView_GetItemCount($Listview_Main) < 1 Then
+	ElseIf _GUICtrlListView_GetItemCount($g_hListview_Main) < 1 Then
 		Return
 	EndIf
 EndFunc   ;==>WM_CONTEXTMENU
@@ -851,24 +841,25 @@ EndFunc   ;==>WM_CONTEXTMENU
 
 
 Func _ContextMenu($sItem)
-	Switch _GUICtrlMenu_TrackPopupMenu($Context_Main, GUICtrlGetHandle($Listview_Main), -1, -1, 1, 1, 2)
-		Case $IdRun
+	Switch _GUICtrlMenu_TrackPopupMenu($g_hContext_Main, GUICtrlGetHandle($g_hListview_Main), -1, -1, 1, 1, 2)
+		Case $eRun
 			RunSetup()
 
-		Case $IdEdit
-
-			GUISetState(@SW_DISABLE, $Gui_Main)
-			_GUICtrlStatusBar_SetText($Log, "Begin to edit Setup")
+		Case $eEdit
+			GUISetState(@SW_DISABLE, $g_hGui_Main)
+			$g_aGuiPos_Main = WinGetPos($g_hGui_Main)
+			_GUICtrlStatusBar_SetText($g_hLog, "Begin to edit Setup")
 			GUI_Edit()
-			_GUICtrlStatusBar_SetText($Log, "Setup Edit done")
-			GUISetState(@SW_ENABLE, $Gui_Main)
+			UpdateList_Main()
+			_GUICtrlStatusBar_SetText($g_hLog, "Setup Edit done")
+			GUISetState(@SW_ENABLE, $g_hGui_Main)
 
-		Case $IdDelete
+		Case $eDelete
 
-			$Lstbx_Sel = _GUICtrlListView_GetSelectedIndices($Listview_Main, True)
+			$Lstbx_Sel = _GUICtrlListView_GetSelectedIndices($g_hListview_Main, True)
 			If $Lstbx_Sel[0] > 0 Then
 				For $i = 1 To $Lstbx_Sel[0]
-					$sLstbx_SelItem = _GUICtrlListView_GetItemText($Listview_Main, $Lstbx_Sel[$i])
+					$sLstbx_SelItem = _GUICtrlListView_GetItemText($g_hListview_Main, $Lstbx_Sel[$i])
 					If $sLstbx_SelItem <> "" Then
 						IniDelete(@MyDocumentsDir & "\Profiles.ini", $sLstbx_SelItem)
 						If FileExists(@StartupDir & "\MyBot -" & $sLstbx_SelItem & ".lnk") = 1 Then FileDelete(@StartupDir & "\MyBot -" & $sLstbx_SelItem & ".lnk")
@@ -876,23 +867,23 @@ Func _ContextMenu($sItem)
 				Next
 			EndIf
 			If $Lstbx_Sel[0] = 1 Then
-				_GUICtrlStatusBar_SetText($Log, "Deleted " & $Lstbx_Sel[0] & " Setup")
+				_GUICtrlStatusBar_SetText($g_hLog, "Deleted " & $Lstbx_Sel[0] & " Setup")
 			Else
-				_GUICtrlStatusBar_SetText($Log, "Deleted " & $Lstbx_Sel[0] & " Setups")
+				_GUICtrlStatusBar_SetText($g_hLog, "Deleted " & $Lstbx_Sel[0] & " Setups")
 			EndIf
 			UpdateList_Main()
 
-		Case $IdNickname
+		Case $eNickname
 
-			$sLstbx_GetSelTxt = _GUICtrlListView_GetItemTextArray($Listview_Main)
+			$sLstbx_GetSelTxt = _GUICtrlListView_GetItemTextArray($g_hListview_Main)
 			ReadIni($sLstbx_GetSelTxt[1])
-			$sIptbx = InputBox("Give Profile a Nickname", "Here you can set a NickName for each Setup. It will be shown in Brackets behind the Profile Name! To Remove a Nick just press OK when nothing is in the Input!", "", "", -1, -1, Default, Default, 0, $Gui_Main)
+			$sIptbx = InputBox("Give Profile a Nickname", "Here you can set a NickName for each Setup. It will be shown in Brackets behind the Profile Name! To Remove a Nick just press OK when nothing is in the Input!", "", "", -1, -1, Default, Default, 0, $g_hGui_Main)
 			If $sIptbx = "" Then
-				IniRenameSection($sProfiles, $sLstbx_GetSelTxt[1], $sIniProfile)
+				IniRenameSection($g_sDirProfiles, $sLstbx_GetSelTxt[1], $g_sIniProfile)
 			Else
-				IniRenameSection($sProfiles, $sLstbx_GetSelTxt[1], $sIniProfile & " ( " & $sIptbx & " )")
+				IniRenameSection($g_sDirProfiles, $sLstbx_GetSelTxt[1], $g_sIniProfile & " ( " & $sIptbx & " )")
 			EndIf
-			_GUICtrlStatusBar_SetText($Log, "Setup renamed!")
+			_GUICtrlStatusBar_SetText($g_hLog, "Setup renamed!")
 			UpdateList_Main()
 
 	EndSwitch
@@ -902,8 +893,8 @@ EndFunc   ;==>_ContextMenu
 Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 
 	Local $hWndFrom, $iCode, $tNMHDR, $hWndListView
-	$hWndListView = $Listview_Main
-	If Not IsHWnd($Listview_Main) Then $hWndListView = GUICtrlGetHandle($Listview_Main)
+	$hWndListView = $g_hListview_Main
+	If Not IsHWnd($g_hListview_Main) Then $hWndListView = GUICtrlGetHandle($g_hListview_Main)
 
 	$tNMHDR = DllStructCreate($tagNMHDR, $ilParam)
 	$hWndFrom = HWnd(DllStructGetData($tNMHDR, "hWndFrom"))
@@ -920,9 +911,9 @@ Func WM_NOTIFY($hWnd, $iMsg, $iwParam, $ilParam)
 					$subitemNR = DllStructGetData($tInfo, "SubItem")
 					If $Index <> -1 Then
 						If _IsPressed(10) Then
-							$Lstbx_Sel = _GUICtrlListView_GetItemText($Listview_Main, $Index)
+							$Lstbx_Sel = _GUICtrlListView_GetItemText($g_hListview_Main, $Index)
 							ReadIni($Lstbx_Sel)
-							ToolTip("Profile: " & $sIniProfile & @CRLF & "Emulator: " & $sIniEmulator & @CRLF & "Instance: " & $sIniInstance & @CRLF & "Directory: " & $sIniDir)
+							ToolTip("Profile: " & $g_sIniProfile & @CRLF & "Emulator: " & $g_sIniEmulator & @CRLF & "Instance: " & $g_sIniInstance & @CRLF & "Directory: " & $g_sIniDir)
 							Do
 								Sleep(100)
 							Until _IsPressed(10) = False
@@ -945,35 +936,33 @@ Func UpdateSelect()
 	Until InetGetInfo($hUpdateFile, $INET_DOWNLOADCOMPLETE)
 
 	InetClose($hUpdateFile)
-	MsgBox($MB_OK, "Update", "Update finished! Downloaded newer Version and placed it on your Desktop!. After you pressed OK this Open Window will close itself and also will open the new Tool!", 0, $Gui_Main)
+	MsgBox($MB_OK, "Update", "Update finished! Downloaded newer Version and placed it on your Desktop!. After you pressed OK this Open Window will close itself and also will open the new Tool!", 0, $g_hGui_Main)
 	ShellExecute(@DesktopDir & "\SelectBot.exe")
 	FileDelete(@ScriptDir)
 	Exit
 
-
-
 EndFunc   ;==>UpdateSelect
 
 Func WelcomeMsg()
-	$sTempPath2 = @MyDocumentsDir & "\WelcomeMsg.txt"
-	$hUpdateFile = InetGet("https://raw.githubusercontent.com/Fliegerfaust33/SelectBot/master/WelcomeMsg.txt", $sTempPath2, $INET_FORCERELOAD, $INET_DOWNLOADBACKGROUND)
+	$sTempPath = @MyDocumentsDir & "\WelcomeMsg.txt"
+	$hUpdateFile = InetGet("https://raw.githubusercontent.com/Fliegerfaust33/SelectBot/master/WelcomeMsg.txt", $sTempPath, $INET_FORCERELOAD, $INET_DOWNLOADBACKGROUND)
 	Do
 		Sleep(250)
 	Until InetGetInfo($hUpdateFile, $INET_DOWNLOADCOMPLETE)
 
 	InetClose($hUpdateFile)
-	$sDisplayVers = IniRead($sTempPath2, "General", "DisplayVers", "")
-	$sDisplayVersSent = IniRead($sProfiles, "Options", "DisplayVersSent", "")
-	If _VersionCompare($sDisplayVers, $sVersion) = 0 And _VersionCompare($sDisplayVersSent, $sVersion) = -1 Then
-		$sDisplayMsg = IniRead($sTempPath2, "General", "Msg", "")
+	$sDisplayVers = IniRead($sTempPath, "General", "DisplayVers", "")
+	$sDisplayVersSent = IniRead($g_sDirProfiles, "Options", "DisplayVersSent", "")
+	If _VersionCompare($sDisplayVers, $g_sVersion) = 0 And _VersionCompare($sDisplayVersSent, $g_sVersion) = -1 Then
+		$sDisplayMsg = IniRead($sTempPath, "General", "Msg", "")
 		If $sDisplayMsg <> "" Then
 			$sDisplayMsg2 = StringRegExpReplace($sDisplayMsg, "%", @CRLF)
-			MsgBox($MB_OK, "Whats new in " & $sDisplayVers & "?", $sDisplayMsg2, 60, $Gui_Main)
-			IniWrite($sProfiles, "Options", "DisplayVersSent", $sVersion)
+			MsgBox($MB_OK, "Whats new in " & $sDisplayVers & "?", $sDisplayMsg2, 60, $g_hGui_Main)
+			IniWrite($g_sDirProfiles, "Options", "DisplayVersSent", $g_sVersion)
 		EndIf
 	EndIf
 
-	FileDelete($sTempPath2)
+	FileDelete($sTempPath)
 
 
 EndFunc   ;==>WelcomeMsg
@@ -1108,7 +1097,7 @@ EndFunc   ;==>GetiToolsPath
 
 Func EmuInstalled()
 
-	Switch $sSelectedEmulator
+	Switch $g_sSelectedEmulator
 		Case "MEmu"
 			$EmuPath = GetMEmuPath()
 			$EmuExe = "MEmu.exe"
@@ -1125,7 +1114,7 @@ Func EmuInstalled()
 			$EmuPath = GetLeapDroidPath()
 			$EmuExe = "LeapdroidVM.exe"
 
-		Case $sSelectedEmulator = "KOPLAYER"
+		Case "KOPLAYER"
 			$EmuPath = GetKOPLAYERPath()
 			$EmuExe = "KOPLAYER.exe"
 
@@ -1141,17 +1130,15 @@ Func EmuInstalled()
 	EndSwitch
 
 	If FileExists($EmuPath & $EmuExe) = 1 Then
-		$EmuInstalled = True
+		Return True
 	Else
-		$EmuInstalled = False
+		Return False
 	EndIf
-
-	Return $EmuInstalled
 EndFunc   ;==>EmuInstalled
 
-Func InstanceMgr()
+Func InstanceMgr($sEmulator)
 
-	Switch $sSelectedEmulator
+	Switch $sEmulator
 		Case "MEmu"
 			$MgrPath = EnvGet("MEmuHyperv_Path") & "\MEmuManage.exe"
 			If FileExists($MgrPath) = 0 Then
@@ -1184,7 +1171,6 @@ Func InstanceMgr()
 			$MgrPath = $VirtualBox_Path & "VBoxManage.exe"
 
 	EndSwitch
-
 
 	Return $MgrPath
 
