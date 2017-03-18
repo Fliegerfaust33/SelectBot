@@ -44,7 +44,7 @@
 
 Global $g_sBotFile = "mybot.run.exe"
 Global $g_sBotFileAU3 = "mybot.run.au3"
-Global $g_sVersion = "3.7.2"
+Global $g_sVersion = "3.7.4"
 Global $g_sDirProfiles = @MyDocumentsDir & "\Profiles.ini"
 Global $g_hGui_Main, $g_hGui_Profile, $g_hGui_Emulator, $g_hGui_Instance, $g_hGui_Dir, $g_hGUI_AutoStart, $g_hGUI_Edit, $g_hListview_Main, $g_hLst_AutoStart, $g_hLog, $g_hProgress, $g_hBtn_Shortcut, $g_hBtn_AutoStart, $g_hContext_Main
 Global $g_hListview_Instances
@@ -782,16 +782,13 @@ Func GetBotVers()
 	For $i = 1 To UBound($aSections, 1) - 1
 		ReadIni($aSections[$i])
 		$hBotVers = FileOpen($g_sIniDir & "\mybot.run.au3")
-		$sBotVers = FileReadLine($hBotVers, 38)
-		$aBotVers = StringSplit($sBotVers, '"')
-		If UBound($aBotVers) > 2 Then
-			$sBotVers = $aBotVers[2]
-		Else
-			$sBotVers = ""
-		EndIf
+
+		$aBotVers = FileRead($hBotVers)
+		$sBotVers = StringRegExp($aBotVers, 'v[0-9].[0-9].[0-9]', 1)
+
 		FileClose($hBotVers)
 		If $aSections[$i] <> "Options" Then
-			IniWrite($g_sDirProfiles, $aSections[$i], "BotVers", $sBotVers)
+			IniWrite($g_sDirProfiles, $aSections[$i], "BotVers", $sBotVers[0])
 		EndIf
 	Next
 EndFunc   ;==>GetBotVers
