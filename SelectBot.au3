@@ -1,12 +1,12 @@
 #RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_Icon=icons\Elegantthemes-Beautiful-Flat-Compose.ico
+#AutoIt3Wrapper_Icon=..\..\Desktop\SelectBot\icons\Elegantthemes-Beautiful-Flat-Compose.ico
 #AutoIt3Wrapper_Outfile=SelectBot.Exe
 #AutoIt3Wrapper_Compression=4
 #AutoIt3Wrapper_UseUpx=y
 #AutoIt3Wrapper_Res_Comment=For MyBot.run. Made by Fliegerfaust
 #AutoIt3Wrapper_Res_Description=SelectBot for MyBot
-#AutoIt3Wrapper_Res_Fileversion=3.7.2.0
+#AutoIt3Wrapper_Res_Fileversion=3.7.4.0
 #AutoIt3Wrapper_Res_LegalCopyright=Fliegerfaust
 #AutoIt3Wrapper_Run_Tidy=y
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
