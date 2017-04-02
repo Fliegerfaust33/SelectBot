@@ -6,7 +6,7 @@
 #AutoIt3Wrapper_UseUpx=y
 #AutoIt3Wrapper_Res_Comment=For MyBot.run. Made by Fliegerfaust
 #AutoIt3Wrapper_Res_Description=SelectBot for MyBot
-#AutoIt3Wrapper_Res_Fileversion=3.7.4.0
+#AutoIt3Wrapper_Res_Fileversion=3.7.5.0
 #AutoIt3Wrapper_Res_LegalCopyright=Fliegerfaust
 #AutoIt3Wrapper_Run_Tidy=y
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -44,7 +44,7 @@
 
 Global $g_sBotFile = "mybot.run.exe"
 Global $g_sBotFileAU3 = "mybot.run.au3"
-Global $g_sVersion = "3.7.4"
+Global $g_sVersion = "3.7.5"
 Global $g_sDirProfiles = @MyDocumentsDir & "\Profiles.ini"
 Global $g_hGui_Main, $g_hGui_Profile, $g_hGui_Emulator, $g_hGui_Instance, $g_hGui_Dir, $g_hGUI_AutoStart, $g_hGUI_Edit, $g_hListview_Main, $g_hLst_AutoStart, $g_hLog, $g_hProgress, $g_hBtn_Shortcut, $g_hBtn_AutoStart, $g_hContext_Main
 Global $g_hListview_Instances
@@ -343,7 +343,7 @@ EndFunc   ;==>GUI_Emulator
 
 
 Func GUI_Instance()
-	Local $bIsBluestacks = False, $hLbl_Instance = 0
+	Local $hLbl_Instance = 0
 
 	$g_hGui_Instance = GUICreate("Instance", 258, 167, $g_aGuiPos_Main[0], $g_aGuiPos_Main[1] + 150, -1, -1, $g_hGui_Main)
 	$hIpt_Instance = GUICtrlCreateInput("", 24, 72, 201, 21)
@@ -352,8 +352,8 @@ Func GUI_Instance()
 	GUISetState(@SW_HIDE, $g_hGui_Instance)
 
 	Switch $g_sSelectedEmulator
-		Case "BlueStacks" Or "BlueStacks2"
-			$bIsBluestacks = True
+		Case "BlueStacks", "BlueStacks2"
+			Return
 		Case "MEmu"
 			GUISetState(@SW_SHOW, $g_hGui_Instance)
 			GUICtrlSetData($hLbl_Instance, "Please type in your MEmu Instance Name! Example: MEmu , MEmu_1, MEmu_2, etc")
@@ -380,11 +380,7 @@ Func GUI_Instance()
 			GUICtrlSetData($hIpt_Instance, "iToolsVM_")
 	EndSwitch
 
-
 	While 1
-
-		If $bIsBluestacks Then ExitLoop
-
 
 		Switch GUIGetMsg()
 			Case $GUI_EVENT_CLOSE
@@ -783,12 +779,12 @@ Func GetBotVers()
 		ReadIni($aSections[$i])
 		$hBotVers = FileOpen($g_sIniDir & "\mybot.run.au3")
 
-		$aBotVers = FileRead($hBotVers)
-		$sBotVers = StringRegExp($aBotVers, 'v[0-9].[0-9].[0-9]', 1)
+		$aBotVers = FileReadLine($hBotVers, 34)
+		$sBotVers = StringSplit($aBotVers, '"')
 
 		FileClose($hBotVers)
 		If $aSections[$i] <> "Options" Then
-			IniWrite($g_sDirProfiles, $aSections[$i], "BotVers", $sBotVers[0])
+			If IsArray($sBotVers) Then IniWrite($g_sDirProfiles, $aSections[$i], "BotVers", $sBotVers[2])
 		EndIf
 	Next
 EndFunc   ;==>GetBotVers
