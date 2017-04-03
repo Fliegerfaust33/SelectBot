@@ -1,4 +1,4 @@
 [General]
-DisplayVers=3.7.2
-Msg="Changelog in 3.7.2:%%%-Add Statusbar%-Add ProgressBar%-Fixed Setup Deletion%- Fixed Setup Editing%-Fixed Directory Selection%- Smaller Fixes
+DisplayVers=3.8
+Msg="Changelog in 3.8:%%%-Added Special Parameters for each Bot%-Minor Fixes
 Note= LineBreakers = %

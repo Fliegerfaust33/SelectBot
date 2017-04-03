@@ -6,7 +6,7 @@
 #AutoIt3Wrapper_UseUpx=y
 #AutoIt3Wrapper_Res_Comment=For MyBot.run. Made by Fliegerfaust
 #AutoIt3Wrapper_Res_Description=SelectBot for MyBot
-#AutoIt3Wrapper_Res_Fileversion=3.7.5.0
+#AutoIt3Wrapper_Res_Fileversion=3.8
 #AutoIt3Wrapper_Res_LegalCopyright=Fliegerfaust
 #AutoIt3Wrapper_Run_Tidy=y
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -44,13 +44,13 @@
 
 Global $g_sBotFile = "mybot.run.exe"
 Global $g_sBotFileAU3 = "mybot.run.au3"
-Global $g_sVersion = "3.7.5"
+Global $g_sVersion = "3.8"
 Global $g_sDirProfiles = @MyDocumentsDir & "\Profiles.ini"
-Global $g_hGui_Main, $g_hGui_Profile, $g_hGui_Emulator, $g_hGui_Instance, $g_hGui_Dir, $g_hGUI_AutoStart, $g_hGUI_Edit, $g_hListview_Main, $g_hLst_AutoStart, $g_hLog, $g_hProgress, $g_hBtn_Shortcut, $g_hBtn_AutoStart, $g_hContext_Main
+Global $g_hGui_Main, $g_hGui_Profile, $g_hGui_Emulator, $g_hGui_Instance, $g_hGui_Dir, $g_hGui_Parameter, $g_hGUI_AutoStart, $g_hGUI_Edit, $g_hListview_Main, $g_hLst_AutoStart, $g_hLog, $g_hProgress, $g_hBtn_Shortcut, $g_hBtn_AutoStart, $g_hContext_Main
 Global $g_hListview_Instances
 Global $g_aGuiPos_Main
 Global $g_sTypedProfile, $g_sSelectedEmulator
-Global $g_sIniProfile, $g_sIniEmulator, $g_sIniInstance, $g_sIniDir
+Global $g_sIniProfile, $g_sIniEmulator, $g_sIniInstance, $g_sIniDir, $g_sIniParameters
 Global Enum $eRun = 1000, $eEdit, $eDelete, $eNickname
 
 If @OSArch = "X86" Then
@@ -222,14 +222,17 @@ Func GUI_Main()
 							_GUICtrlStatusBar_SetText($g_hLog, "Select Profile")
 							$bSetupStopped = GUI_Profile()
 							If $bSetupStopped Then ExitLoop
-							GUICtrlSetData($g_hProgress, 25)
+							GUICtrlSetData($g_hProgress, 20)
 							$bSetupStopped = GUI_Emulator()
 							If $bSetupStopped Then ExitLoop
-							GUICtrlSetData($g_hProgress, 50)
+							GUICtrlSetData($g_hProgress, 40)
 							$bSetupStopped = GUI_Instance()
 							If $bSetupStopped Then ExitLoop
-							GUICtrlSetData($g_hProgress, 75)
+							GUICtrlSetData($g_hProgress, 60)
 							$bSetupStopped = GUI_DIR()
+							If $bSetupStopped Then ExitLoop
+							GUICtrlSetData($g_hProgress, 80)
+							$bSetupStopped = GUI_PARAMETER()
 							If $bSetupStopped Then ExitLoop
 							_GUICtrlStatusBar_SetText($g_hLog, "Setup Created!")
 						Until 1
@@ -429,7 +432,7 @@ EndFunc   ;==>GUI_Instance
 Func GUI_DIR()
 	$g_hGui_Dir = GUICreate("Directory", 258, 167, $g_aGuiPos_Main[0], $g_aGuiPos_Main[1] + 150, -1, -1, $g_hGui_Main)
 	$hBtn_Folder = GUICtrlCreateButton("Choose Folder", 24, 72, 201, 21)
-	$hBtn_Finish = GUICtrlCreateButton("Finish", 72, 120, 97, 25, $WS_GROUP)
+	$hBtn_Finish = GUICtrlCreateButton("Next", 72, 120, 97, 25, $WS_GROUP)
 	GUICtrlSetState(-1, $GUI_DISABLE)
 	GUICtrlCreateLabel("Please select the MyBot Folder where the mybot.run.exe or .au3 is located at", 24, 8, 204, 57)
 	GUISetState()
@@ -442,7 +445,7 @@ Func GUI_DIR()
 			Case $GUI_EVENT_CLOSE
 				IniDelete($g_sDirProfiles, $g_sTypedProfile)
 				GUIDelete($g_hGui_Dir)
-				ExitLoop
+				Return -1
 
 			Case $hBtn_Folder
 				WinSetOnTop($g_hGui_Main, "", $WINDOWS_NOONTOP)
@@ -480,15 +483,63 @@ Func GUI_DIR()
 
 EndFunc   ;==>GUI_DIR
 
+Func GUI_PARAMETER()
+	Local $iEndResult
+
+	$g_hGui_Parameter = GUICreate("Special Parameter", 258, 167, $g_aGuiPos_Main[0], $g_aGuiPos_Main[1] + 150, -1, -1, $g_hGui_Main)
+	GUICtrlCreateLabel("Check Options if you want to run the Bot with special Parameters. These are not mandatory!", 24, 8, 204, 57)
+	$hChk_NoWatchdog = GUICtrlCreateCheckbox("No Watchdog", 8, 55)
+	GUICtrlSetTip(-1, "Check this to run the Bot without Watchdog")
+	$hChk_StartBotDocked = GUICtrlCreateCheckbox("Dock Bot on Start", 8, 75)
+	GUICtrlSetTip(-1, "Auto Dock the Bot Window to the Android when the Bot launches")
+	$hChk_StartBotDockedAndShrinked = GUICtrlCreateCheckbox("Dock & Shrink Bot on Start", 8, 95)
+	GUICtrlSetTip(-1, "Auto Dock and Shrink the Bot Window to the Android when the Bot launches")
+	$hChk_DpiAwarness = GUICtrlCreateCheckbox("DPI Awareness", 160, 55)
+	GUICtrlSetTip(-1, "Launch the Bot in DPI Awareness Mode")
+
+	$hBtn_Finish = GUICtrlCreateButton("Finish", 72, 130, 97, 25, $WS_GROUP)
+	GUISetState()
+
+
+
+	While 1
+
+		Switch GUIGetMsg()
+			Case $GUI_EVENT_CLOSE
+				IniDelete($g_sDirProfiles, $g_sTypedProfile)
+				GUIDelete($g_hGui_Parameter)
+				Return -1
+
+
+			Case $hBtn_Finish
+				$iEndResult &= GUICtrlRead($hChk_NoWatchdog) = $GUI_CHECKED ? 1 : 0
+				$iEndResult &= GUICtrlRead($hChk_StartBotDocked) = $GUI_CHECKED ? 1 : 0
+				$iEndResult &= GUICtrlRead($hChk_StartBotDockedAndShrinked) = $GUI_CHECKED ? 1 : 0
+				$iEndResult &= GUICtrlRead($hChk_DpiAwarness) = $GUI_CHECKED ? 1 : 0
+				IniWrite($g_sDirProfiles, $g_sTypedProfile, "Parameters", $iEndResult)
+				GUIDelete($g_hGui_Parameter)
+				ExitLoop
+
+
+		EndSwitch
+	WEnd
+
+
+
+
+EndFunc   ;==>GUI_PARAMETER
+
 
 
 Func GUI_Edit()
+
+	Local $iEndResult
 
 	$aLstbx_GetSelTxt = _GUICtrlListView_GetSelectedIndices($g_hListview_Main, True)
 	$sLstbx_SelItem = _GUICtrlListView_GetItemText($g_hListview_Main, $aLstbx_GetSelTxt[1])
 	ReadIni($sLstbx_SelItem)
 	$sSelectedFolder = $g_sIniDir
-	$g_hGUI_Edit = GUICreate("Edit INI", 258, 187, $g_aGuiPos_Main[0], $g_aGuiPos_Main[1] + 150, -1, -1, $g_hGui_Main)
+	$g_hGUI_Edit = GUICreate("Edit INI", 258, 230, $g_aGuiPos_Main[0], $g_aGuiPos_Main[1] + 150, -1, -1, $g_hGui_Main)
 	$hIpt_Profile = GUICtrlCreateInput($g_sIniProfile, 112, 8, 137, 21)
 	$hCmb_Emulator = GUICtrlCreateCombo($g_sIniEmulator, 112, 40, 137, 21, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL))
 	$hIpt_Instance = GUICtrlCreateInput($g_sIniInstance, 112, 72, 137, 21)
@@ -497,7 +548,23 @@ Func GUI_Edit()
 	GUICtrlCreateLabel("Emulator:", 8, 40, 95, 17)
 	GUICtrlCreateLabel("Instance:", 8, 72, 95, 17)
 	GUICtrlCreateLabel("Directory:", 8, 104, 95, 17)
-	$hBtn_Save = GUICtrlCreateButton("Save and Close", 76, 150, 97, 25, $WS_GROUP)
+
+	$hChk_NoWatchdog = GUICtrlCreateCheckbox("No Watchdog", 8, 135)
+	GUICtrlSetTip(-1, "Check this to run the Bot without Watchdog")
+	$hChk_StartBotDocked = GUICtrlCreateCheckbox("Dock Bot on Start", 8, 155)
+	GUICtrlSetTip(-1, "Auto Dock the Bot Window to the Android when the Bot launches")
+	$hChk_StartBotDockedAndShrinked = GUICtrlCreateCheckbox("Dock & Shrink Bot on Start", 8, 175)
+	GUICtrlSetTip(-1, "Auto Dock and Shrink the Bot Window to the Android when the Bot launches")
+	$hChk_DpiAwarness = GUICtrlCreateCheckbox("DPI Awareness", 160, 135)
+	GUICtrlSetTip(-1, "Launch the Bot in DPI Awareness Mode")
+
+	Local $aParameters = StringSplit($g_sIniParameters, "")
+	If $aParameters[1] = 1 Then GUICtrlSetState($hChk_NoWatchdog, $GUI_CHECKED)
+	If $aParameters[2] = 1 Then GUICtrlSetState($hChk_StartBotDocked, $GUI_CHECKED)
+	If $aParameters[3] = 1 Then GUICtrlSetState($hChk_StartBotDockedAndShrinked, $GUI_CHECKED)
+	If $aParameters[4] = 1 Then GUICtrlSetState($hChk_DpiAwarness, $GUI_CHECKED)
+
+	$hBtn_Save = GUICtrlCreateButton("Save and Close", 76, 200, 97, 25, $WS_GROUP)
 	GUISetState()
 
 
@@ -567,11 +634,16 @@ Func GUI_Edit()
 				$sSelectedProfile = GUICtrlRead($hIpt_Profile)
 				$sSelectedEmulator = GUICtrlRead($hCmb_Emulator)
 				$sSelectedInstance = GUICtrlRead($hIpt_Instance)
+				$iEndResult &= GUICtrlRead($hChk_NoWatchdog) = $GUI_CHECKED ? 1 : 0
+				$iEndResult &= GUICtrlRead($hChk_StartBotDocked) = $GUI_CHECKED ? 1 : 0
+				$iEndResult &= GUICtrlRead($hChk_StartBotDockedAndShrinked) = $GUI_CHECKED ? 1 : 0
+				$iEndResult &= GUICtrlRead($hChk_DpiAwarness) = $GUI_CHECKED ? 1 : 0
 				IniDelete($g_sDirProfiles, $sLstbx_SelItem)
 				IniWrite($g_sDirProfiles, $sSelectedProfile, "Profile", $sSelectedProfile)
 				IniWrite($g_sDirProfiles, $sSelectedProfile, "Emulator", $sSelectedEmulator)
 				IniWrite($g_sDirProfiles, $sSelectedProfile, "Instance", $sSelectedInstance)
 				IniWrite($g_sDirProfiles, $sSelectedProfile, "Dir", $sSelectedFolder)
+				IniWrite($g_sDirProfiles, $g_sTypedProfile, "Parameters", $iEndResult)
 				GUIDelete($g_hGUI_Edit)
 				ExitLoop
 		EndSwitch
@@ -689,11 +761,13 @@ Func RunSetup()
 			$sLstbx_SelItem = _GUICtrlListView_GetItemText($g_hListview_Main, $Lstbx_Sel[$i])
 			If $sLstbx_SelItem <> "" Then
 				ReadIni($sLstbx_SelItem)
+				$aParameters = StringSplit($g_sIniParameters, "")
+				Local $sSpecialParameter = $aParameters[1] = 1 ? " /nowatchdog" : "" & $aParameters[2] = 1 ? " /dock1" : "" & $aParameters[3] = 1 ? " /dock2" : "" & $aParameters[4] = 1 ? " /dpiaware" : ""
 				_GUICtrlStatusBar_SetText($g_hLog, "Running: " & $g_sIniProfile)
 				If FileExists($g_sIniDir & "\" & $g_sBotFile) = 1 Then
-					ShellExecute($g_sBotFile, $g_sIniProfile & " " & $g_sIniEmulator & " " & $g_sIniInstance, $g_sIniDir)
+					ShellExecute($g_sBotFile, $g_sIniProfile & " " & $g_sIniEmulator & " " & $g_sIniInstance & $sSpecialParameter, $g_sIniDir)
 				ElseIf FileExists($g_sIniDir & "\" & $g_sBotFileAU3) = 1 Then
-					ShellExecute($g_sBotFileAU3, $g_sIniProfile & " " & $g_sIniEmulator & " " & $g_sIniInstance, $g_sIniDir)
+					ShellExecute($g_sBotFileAU3, $g_sIniProfile & " " & $g_sIniEmulator & " " & $g_sIniInstance & $sSpecialParameter, $g_sIniDir)
 				Else
 					MsgBox($MB_OK, "No Bot found", "Couldn't find any Bot in the Directory, please check if you have the mybot.run.exe or the mybot.run.au3 in the Dir and if you selected the right Dir!", 0, $g_hGui_Main)
 					_GUICtrlStatusBar_SetText($g_hLog, "Error while Running")
@@ -711,6 +785,8 @@ Func CreateShortcut()
 			$sLstbx_SelItem = _GUICtrlListView_GetItemText($g_hListview_Main, $Lstbx_Sel[$i])
 			If $sLstbx_SelItem <> "" Then
 				ReadIni($sLstbx_SelItem)
+				$aParameters = StringSplit($g_sIniParameters, "")
+				Local $sSpecialParameter = $aParameters[1] = 1 ? " /nowatchdog" : "" & $aParameters[2] = 1 ? " /dock1" : "" & $aParameters[3] = 1 ? " /dock2" : "" & $aParameters[4] = 1 ? " /dpiaware" : ""
 				If FileExists($g_sIniDir & "\" & $g_sBotFile) Then
 					$sBotFileName = $g_sBotFile
 				ElseIf FileExists($g_sIniDir & "\" & $g_sBotFileAU3) Then
@@ -718,7 +794,7 @@ Func CreateShortcut()
 				Else
 					MsgBox($MB_OK, "No Bot found", "Couldn't find any Bot in the Directory, please check if you have the mybot.run.exe or the mybot.run.au3 in the Dir and if you selected the right Dir!", 0, $g_hGui_Main)
 				EndIf
-				$hSC = FileCreateShortcut($g_sIniDir & "\" & $sBotFileName, @DesktopDir & "\MyBot -" & $g_sIniProfile & ".lnk", $g_sIniDir, $g_sIniProfile & " " & $g_sIniEmulator & " " & $g_sIniInstance, "Shortcut for Bot Profile:" & $g_sIniProfile)
+				$hSC = FileCreateShortcut($g_sIniDir & "\" & $sBotFileName, @DesktopDir & "\MyBot -" & $g_sIniProfile & ".lnk", $g_sIniDir, $g_sIniProfile & " " & $g_sIniEmulator & " " & $g_sIniInstance & $sSpecialParameter, "Shortcut for Bot Profile:" & $g_sIniProfile)
 				If $hSC = 1 Then $iCreatedSC += 1
 
 			EndIf
@@ -800,6 +876,7 @@ Func ReadIni($sSelectedProfile)
 	$g_sIniEmulator = IniRead($g_sDirProfiles, $sSelectedProfile, "Emulator", "")
 	$g_sIniInstance = IniRead($g_sDirProfiles, $sSelectedProfile, "Instance", "")
 	$g_sIniDir = IniRead($g_sDirProfiles, $sSelectedProfile, "Dir", "")
+	$g_sIniParameters = IniRead($g_sDirProfiles, $sSelectedProfile, "Parameters", 0000)
 
 EndFunc   ;==>ReadIni
 
