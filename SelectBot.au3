@@ -6,7 +6,7 @@
 #AutoIt3Wrapper_UseUpx=y
 #AutoIt3Wrapper_Res_Comment=For MyBot.run. Made by Fliegerfaust
 #AutoIt3Wrapper_Res_Description=SelectBot for MyBot
-#AutoIt3Wrapper_Res_Fileversion=3.8
+#AutoIt3Wrapper_Res_Fileversion=3.8.1
 #AutoIt3Wrapper_Res_LegalCopyright=Fliegerfaust
 #AutoIt3Wrapper_Run_Tidy=y
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -44,7 +44,7 @@
 
 Global $g_sBotFile = "mybot.run.exe"
 Global $g_sBotFileAU3 = "mybot.run.au3"
-Global $g_sVersion = "3.8"
+Global $g_sVersion = "3.8.1"
 Global $g_sDirProfiles = @MyDocumentsDir & "\Profiles.ini"
 Global $g_hGui_Main, $g_hGui_Profile, $g_hGui_Emulator, $g_hGui_Instance, $g_hGui_Dir, $g_hGui_Parameter, $g_hGUI_AutoStart, $g_hGUI_Edit, $g_hListview_Main, $g_hLst_AutoStart, $g_hLog, $g_hProgress, $g_hBtn_Shortcut, $g_hBtn_AutoStart, $g_hContext_Main
 Global $g_hListview_Instances
@@ -60,7 +60,6 @@ Else
 	$Wow6432Node = "\Wow6432Node"
 	$HKLM = "HKLM64"
 EndIf
-
 GUI_Main()
 
 Func GUI_Main()
@@ -395,7 +394,7 @@ Func GUI_Instance()
 				$Instances = LaunchConsole(InstanceMgr($g_sSelectedEmulator), "list vms", 1000)
 				If $g_sSelectedEmulator <> "LeapDroid" Then
 					If $g_sSelectedEmulator = "iTools" Then
-						$Instance = StringRegExp($Instances, "(?i)iToolsVM(?:[_][0-9][0-9])?", 3)
+						$Instance = StringRegExp($Instances, "(?)iToolsVM(?:[_][0-9][0-9])?", 3)
 					Else
 						$Instance = StringRegExp($Instances, "(?i)" & $g_sSelectedEmulator & "(?:[_][0-9])?", 3)
 					EndIf
@@ -855,17 +854,15 @@ Func GetBotVers()
 		ReadIni($aSections[$i])
 		$hBotVers = FileOpen($g_sIniDir & "\mybot.run.au3")
 
-		$aBotVers = FileReadLine($hBotVers, 34)
-		$sBotVers = StringSplit($aBotVers, '"')
+		$sBotVers = FileRead($hBotVers)
+		$aBotVers = StringRegExp($sBotVers, "(?i)v([0-9]+)(?:\.[0-9]+)?(?:\.[0-9]+)?", 2)
 
 		FileClose($hBotVers)
 		If $aSections[$i] <> "Options" Then
-			If IsArray($sBotVers) Then IniWrite($g_sDirProfiles, $aSections[$i], "BotVers", $sBotVers[2])
+			If IsArray($aBotVers) Then IniWrite($g_sDirProfiles, $aSections[$i], "BotVers", $aBotVers[0])
 		EndIf
 	Next
 EndFunc   ;==>GetBotVers
-
-
 
 Func ReadIni($sSelectedProfile)
 
@@ -1000,15 +997,15 @@ EndFunc   ;==>WM_NOTIFY
 
 Func UpdateSelect()
 
-	$hUpdateFile = InetGet("https://github.com/Fliegerfaust33/SelectBot/raw/master/SelectBot.Exe", @DesktopDir & "\SelectBot.exe", $INET_FORCERELOAD, $INET_DOWNLOADBACKGROUND)
+	FileMove(@ScriptDir & "\" & @ScriptName, @ScriptDir & "\" & "SelectBotOLD" & $g_sVersion & ".exe")
+	$hUpdateFile = InetGet("https://github.com/Fliegerfaust33/SelectBot/raw/master/SelectBot.Exe", @ScriptDir & "\SelectBot.exe", $INET_FORCERELOAD, $INET_DOWNLOADBACKGROUND)
 	Do
 		Sleep(250)
 	Until InetGetInfo($hUpdateFile, $INET_DOWNLOADCOMPLETE)
 
 	InetClose($hUpdateFile)
-	MsgBox($MB_OK, "Update", "Update finished! Downloaded newer Version and placed it on your Desktop!. After you pressed OK this Open Window will close itself and also will open the new Tool!", 0, $g_hGui_Main)
-	ShellExecute(@DesktopDir & "\SelectBot.exe")
-	FileDelete(@ScriptDir)
+	MsgBox($MB_OK, "Update", "Update finished! Downloaded newer Version and placed it in old Directoy!.New Version gets now started! Just delete the SelectBotOLD" & $g_sVersion & ".exe and continue botting :)", 0, $g_hGui_Main)
+	ShellExecute(@ScriptDir & "\SelectBot.exe")
 	Exit
 
 EndFunc   ;==>UpdateSelect
@@ -1021,6 +1018,7 @@ Func WelcomeMsg()
 	Until InetGetInfo($hUpdateFile, $INET_DOWNLOADCOMPLETE)
 
 	InetClose($hUpdateFile)
+	If Not FileExists($g_sDirProfiles) Then Return
 	$sDisplayVers = IniRead($sTempPath, "General", "DisplayVers", "")
 	$sDisplayVersSent = IniRead($g_sDirProfiles, "Options", "DisplayVersSent", "")
 	If _VersionCompare($sDisplayVers, $g_sVersion) = 0 And _VersionCompare($sDisplayVersSent, $g_sVersion) = -1 Then
@@ -1036,9 +1034,6 @@ Func WelcomeMsg()
 
 
 EndFunc   ;==>WelcomeMsg
-
-
-
 
 ; THANKS COSOTE
 
