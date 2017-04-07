@@ -1,4 +1,4 @@
 [General]
 DisplayVers=3.8.1
-Msg="Changelog in 3.8.1:%%%-Fixed Update Function%-Fixed Crash while reading Bot Version%%07.04.2017
+Msg=Changelog in 3.8.1:%%%-Fixed Update Function%-Fixed Crash while reading Bot Version%%07.04.2017
 Note= LineBreakers = %
