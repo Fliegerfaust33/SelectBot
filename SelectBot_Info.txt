@@ -1,0 +1,6 @@
+[General]
+DisplayVers=3.8.2
+[Changelog]
+Title=Whats new in 3.8.2 ?
+Message=-Fixed Crash while Editing Setup%-Modify Changelog GUI%%Deleting Profiles.ini may be required
+Date=10th April 2017

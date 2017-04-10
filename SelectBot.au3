@@ -1,4 +1,4 @@
-#RequireAdmin
+;#RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\Desktop\SelectBot\icons\Elegantthemes-Beautiful-Flat-Compose.ico
 #AutoIt3Wrapper_Outfile=SelectBot.Exe
@@ -6,7 +6,7 @@
 #AutoIt3Wrapper_UseUpx=y
 #AutoIt3Wrapper_Res_Comment=For MyBot.run. Made by Fliegerfaust
 #AutoIt3Wrapper_Res_Description=SelectBot for MyBot
-#AutoIt3Wrapper_Res_Fileversion=3.8.1
+#AutoIt3Wrapper_Res_Fileversion=3.8.2
 #AutoIt3Wrapper_Res_LegalCopyright=Fliegerfaust
 #AutoIt3Wrapper_Run_Tidy=y
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -44,10 +44,10 @@
 
 Global $g_sBotFile = "mybot.run.exe"
 Global $g_sBotFileAU3 = "mybot.run.au3"
-Global $g_sVersion = "3.8.1"
+Global $g_sVersion = "3.8.2"
 Global $g_sDirProfiles = @MyDocumentsDir & "\Profiles.ini"
 Global $g_hGui_Main, $g_hGui_Profile, $g_hGui_Emulator, $g_hGui_Instance, $g_hGui_Dir, $g_hGui_Parameter, $g_hGUI_AutoStart, $g_hGUI_Edit, $g_hListview_Main, $g_hLst_AutoStart, $g_hLog, $g_hProgress, $g_hBtn_Shortcut, $g_hBtn_AutoStart, $g_hContext_Main
-Global $g_hListview_Instances
+Global $g_hListview_Instances, $g_hLblUpdateAvailable
 Global $g_aGuiPos_Main
 Global $g_sTypedProfile, $g_sSelectedEmulator
 Global $g_sIniProfile, $g_sIniEmulator, $g_sIniInstance, $g_sIniDir, $g_sIniParameters
@@ -60,6 +60,7 @@ Else
 	$Wow6432Node = "\Wow6432Node"
 	$HKLM = "HKLM64"
 EndIf
+
 GUI_Main()
 
 Func GUI_Main()
@@ -68,7 +69,10 @@ Func GUI_Main()
 	$g_hListview_Main = GUICtrlCreateListView("", 8, 24, 241, 305, BitOR($LVS_REPORT, $LVS_SHOWSELALWAYS), -1)
 	_GUICtrlListView_InsertColumn($g_hListview_Main, 1, "Setup", 172)
 	_GUICtrlListView_InsertColumn($g_hListview_Main, 2, "Bot Vers", 65)
-	;GUICtrlCreateLabel("Your saved Setups:", 8, 4, 200, 17)
+	$g_hLblUpdateAvailable = GUICtrlCreateLabel("(Update available)", 8, 4, 200, 17)
+	GUICtrlSetFont(-1, 7)
+	GUICtrlSetColor(-1, $COLOR_RED)
+	GUICtrlSetState(-1, $GUI_HIDE)
 	$g_hBtn_Setup = GUICtrlCreateButton("New Setup", 8, 336, 243, 25, $WS_GROUP)
 	GUICtrlSetTip(-1, "Use this Button to create a new Setup with your Profile, wished Emulator and Instance aswell as the Bot you want to use")
 	$g_hBtn_Shortcut = GUICtrlCreateButton("Shortcut", 8, 368, 113, 25, $WS_GROUP)
@@ -114,7 +118,8 @@ Func GUI_Main()
 
 
 	UpdateList_Main()
-	WelcomeMsg()
+	CheckUpdate()
+	ChangeLog()
 
 	If IniRead($g_sDirProfiles, "Options", "DisplayVersSent", "") = "" Then IniWrite($g_sDirProfiles, "Options", "DisplayVersSent", "1.0")
 
@@ -166,13 +171,13 @@ Func GUI_Main()
 					Case $hMenu_CheckForUpdate
 
 						$sTempPath = _WinAPI_GetTempFileName(@TempDir)
-						$hUpdateFile = InetGet("https://raw.githubusercontent.com/Fliegerfaust33/SelectBot/master/CheckUpdate.txt", $sTempPath, $INET_FORCERELOAD, $INET_DOWNLOADBACKGROUND)
+						$hUpdateFile = InetGet("https://raw.githubusercontent.com/Fliegerfaust33/SelectBot/master/SelectBot_Info.txt", $sTempPath, $INET_FORCERELOAD, $INET_DOWNLOADBACKGROUND)
 						Do
 							Sleep(250)
 						Until InetGetInfo($hUpdateFile, $INET_DOWNLOADCOMPLETE)
 
 						InetClose($hUpdateFile)
-						$hGitVersion = FileRead($sTempPath)
+						$hGitVersion = IniRead($sTempPath, "General", "DisplayVers", "")
 						$sGitVersion = StringStripWS($hGitVersion, 8)
 						$Update = _VersionCompare($g_sVersion, $sGitVersion)
 
@@ -557,11 +562,11 @@ Func GUI_Edit()
 	$hChk_DpiAwarness = GUICtrlCreateCheckbox("DPI Awareness", 160, 135)
 	GUICtrlSetTip(-1, "Launch the Bot in DPI Awareness Mode")
 
-	Local $aParameters = StringSplit($g_sIniParameters, "")
-	If $aParameters[1] = 1 Then GUICtrlSetState($hChk_NoWatchdog, $GUI_CHECKED)
-	If $aParameters[2] = 1 Then GUICtrlSetState($hChk_StartBotDocked, $GUI_CHECKED)
-	If $aParameters[3] = 1 Then GUICtrlSetState($hChk_StartBotDockedAndShrinked, $GUI_CHECKED)
-	If $aParameters[4] = 1 Then GUICtrlSetState($hChk_DpiAwarness, $GUI_CHECKED)
+	Local $aParameters = StringSplit($g_sIniParameters, "", 2)
+	If $aParameters[0] = 1 Then GUICtrlSetState($hChk_NoWatchdog, $GUI_CHECKED)
+	If $aParameters[1] = 1 Then GUICtrlSetState($hChk_StartBotDocked, $GUI_CHECKED)
+	If $aParameters[2] = 1 Then GUICtrlSetState($hChk_StartBotDockedAndShrinked, $GUI_CHECKED)
+	If $aParameters[3] = 1 Then GUICtrlSetState($hChk_DpiAwarness, $GUI_CHECKED)
 
 	$hBtn_Save = GUICtrlCreateButton("Save and Close", 76, 200, 97, 25, $WS_GROUP)
 	GUISetState()
@@ -642,7 +647,7 @@ Func GUI_Edit()
 				IniWrite($g_sDirProfiles, $sSelectedProfile, "Emulator", $sSelectedEmulator)
 				IniWrite($g_sDirProfiles, $sSelectedProfile, "Instance", $sSelectedInstance)
 				IniWrite($g_sDirProfiles, $sSelectedProfile, "Dir", $sSelectedFolder)
-				IniWrite($g_sDirProfiles, $g_sTypedProfile, "Parameters", $iEndResult)
+				IniWrite($g_sDirProfiles, $sSelectedProfile, "Parameters", $iEndResult)
 				GUIDelete($g_hGUI_Edit)
 				ExitLoop
 		EndSwitch
@@ -1010,30 +1015,73 @@ Func UpdateSelect()
 
 EndFunc   ;==>UpdateSelect
 
-Func WelcomeMsg()
-	$sTempPath = @MyDocumentsDir & "\WelcomeMsg.txt"
-	$hUpdateFile = InetGet("https://raw.githubusercontent.com/Fliegerfaust33/SelectBot/master/WelcomeMsg.txt", $sTempPath, $INET_FORCERELOAD, $INET_DOWNLOADBACKGROUND)
+Func CheckUpdate()
+	$sTempPath = @MyDocumentsDir & "\SelectBot_Info.txt"
+	$hUpdateFile = InetGet("https://raw.githubusercontent.com/Fliegerfaust33/SelectBot/master/SelectBot_Info.txt", $sTempPath, $INET_FORCERELOAD, $INET_DOWNLOADBACKGROUND)
+	Do
+		Sleep(250)
+	Until InetGetInfo($hUpdateFile, $INET_DOWNLOADCOMPLETE)
+
+	InetClose($hUpdateFile)
+	$hGitVersion = IniRead($sTempPath, "General", "DisplayVers", "")
+	$sGitVersion = StringStripWS($hGitVersion, 8)
+	$Update = _VersionCompare($g_sVersion, $sGitVersion)
+
+	If $Update = -1 Then GUICtrlSetState($g_hLblUpdateAvailable, $GUI_SHOW)
+EndFunc   ;==>CheckUpdate
+
+Func ChangeLog()
+	Local $sTitle, $sMessage, $sDate
+
+	$sTempPath = @MyDocumentsDir & "SelectBot_Info.txt"
+	$hUpdateFile = InetGet("https://raw.githubusercontent.com/Fliegerfaust33/SelectBot/master/SelectBot_Info.txt", $sTempPath, $INET_FORCERELOAD, $INET_DOWNLOADBACKGROUND)
 	Do
 		Sleep(250)
 	Until InetGetInfo($hUpdateFile, $INET_DOWNLOADCOMPLETE)
 
 	InetClose($hUpdateFile)
 	If Not FileExists($g_sDirProfiles) Then Return
-	$sDisplayVers = IniRead($sTempPath, "General", "DisplayVers", "")
+	$hGitVersion = IniRead($sTempPath, "General", "DisplayVers", "")
+	$sDisplayVers = StringStripWS($hGitVersion, 8)
 	$sDisplayVersSent = IniRead($g_sDirProfiles, "Options", "DisplayVersSent", "")
 	If _VersionCompare($sDisplayVers, $g_sVersion) = 0 And _VersionCompare($sDisplayVersSent, $g_sVersion) = -1 Then
-		$sDisplayMsg = IniRead($sTempPath, "General", "Msg", "")
-		If $sDisplayMsg <> "" Then
-			$sDisplayMsg2 = StringRegExpReplace($sDisplayMsg, "%", @CRLF)
-			MsgBox($MB_OK, "Whats new in " & $sDisplayVers & "?", $sDisplayMsg2, 60, $g_hGui_Main)
-			IniWrite($g_sDirProfiles, "Options", "DisplayVersSent", $g_sVersion)
-		EndIf
+		$sTitle = IniRead($sTempPath, "Changelog", "Title", "")
+		$sMessage = StringReplace(IniRead($sTempPath, "Changelog", "Message", ""), "%", @CRLF)
+		$sDate = IniRead($sTempPath, "Changelog", "Date", "")
+		IniWrite($g_sDirProfiles, "Options", "DisplayVersSent", $g_sVersion)
+		GUISetState(@SW_DISABLE, $g_hGui_Main)
+		GUI_ChangeLog($sTitle, $sMessage, $sDate)
+		GUISetState(@SW_ENABLE, $g_hGui_Main)
 	EndIf
 
 	FileDelete($sTempPath)
 
 
-EndFunc   ;==>WelcomeMsg
+EndFunc   ;==>ChangeLog
+
+Func GUI_ChangeLog($Title, $Message, $Date)
+
+	$g_aGuiPos_Main = WinGetPos($g_hGui_Main)
+
+	$g_hGUI_ChangeLog = GUICreate($Title, 258, 230, $g_aGuiPos_Main[0], $g_aGuiPos_Main[1] + 150, -1, -1, $g_hGui_Main)
+	GUICtrlCreateLabel($Date, 8, 8)
+	GUICtrlCreateEdit($Message, 8, 30, 242, 160, $ES_READONLY)
+	GUICtrlSetBkColor(-1, $COLOR_WHITE)
+	$hBtn_Dismiss = GUICtrlCreateButton("Dismiss", 76, 200, 97, 25, $WS_GROUP)
+	GUISetState()
+
+
+	While 1
+
+		Switch GUIGetMsg()
+			Case $GUI_EVENT_CLOSE, $hBtn_Dismiss
+				GUIDelete($g_hGUI_ChangeLog)
+				ExitLoop
+		EndSwitch
+
+	WEnd
+
+EndFunc   ;==>GUI_ChangeLog
 
 ; THANKS COSOTE
 
