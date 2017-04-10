@@ -1,4 +1,4 @@
-;#RequireAdmin
+#RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\Desktop\SelectBot\icons\Elegantthemes-Beautiful-Flat-Compose.ico
 #AutoIt3Wrapper_Outfile=SelectBot.Exe
@@ -44,7 +44,7 @@
 
 Global $g_sBotFile = "mybot.run.exe"
 Global $g_sBotFileAU3 = "mybot.run.au3"
-Global $g_sVersion = "3.8.2"
+Global $g_sVersion = "3.8.1"
 Global $g_sDirProfiles = @MyDocumentsDir & "\Profiles.ini"
 Global $g_hGui_Main, $g_hGui_Profile, $g_hGui_Emulator, $g_hGui_Instance, $g_hGui_Dir, $g_hGui_Parameter, $g_hGUI_AutoStart, $g_hGUI_Edit, $g_hListview_Main, $g_hLst_AutoStart, $g_hLog, $g_hProgress, $g_hBtn_Shortcut, $g_hBtn_AutoStart, $g_hContext_Main
 Global $g_hListview_Instances, $g_hLblUpdateAvailable
@@ -1028,6 +1028,8 @@ Func CheckUpdate()
 	$Update = _VersionCompare($g_sVersion, $sGitVersion)
 
 	If $Update = -1 Then GUICtrlSetState($g_hLblUpdateAvailable, $GUI_SHOW)
+
+	FileDelete($sTempPath)
 EndFunc   ;==>CheckUpdate
 
 Func ChangeLog()
