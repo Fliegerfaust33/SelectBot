@@ -719,7 +719,7 @@ Func GUI_AutoStart()
 								$g_sBotFile = $g_sBotFileAU3
 							EndIf
 
-							FileCreateShortcut($g_sIniDir & "\" & $g_sBotFile, @StartupDir & "\MyBot -" & $g_sIniProfile & ".lnk", $g_sIniDir, $g_sIniProfile & " " & $g_sIniEmulator & " " & $g_sIniInstance, "Shortcut for Bot Profile:" & $g_sIniProfile)
+							FileCreateShortcut($g_sIniDir & "\" & $g_sBotFile, @StartupDir & "\MyBot -" & $g_sIniProfile & ".lnk", $g_sIniDir, $g_sIniProfile & " " & $g_sIniEmulator = "BlueStacks3" ? "BlueStacks2" : $g_sIniEmulator & " " & $g_sIniInstance, "Shortcut for Bot Profile:" & $g_sIniProfile)
 
 							UpdateList_AS()
 							If FileExists(@StartupDir & "\MyBot -" & $g_sIniProfile & ".lnk") = 0 Then
@@ -779,9 +779,9 @@ Func RunSetup()
 				Local $sSpecialParameter = $aParameters[1] = 1 ? " /nowatchdog" : "" & $aParameters[2] = 1 ? " /dock1" : "" & $aParameters[3] = 1 ? " /dock2" : "" & $aParameters[4] = 1 ? " /dpiaware" : ""
 				_GUICtrlStatusBar_SetText($g_hLog, "Running: " & $g_sIniProfile)
 				If FileExists($g_sIniDir & "\" & $g_sBotFile) = 1 Then
-					ShellExecute($g_sBotFile, $g_sIniProfile & " " & $g_sIniEmulator & " " & $g_sIniInstance & $sSpecialParameter, $g_sIniDir)
+					ShellExecute($g_sBotFile, $g_sIniProfile & " " & $g_sIniEmulator = "BlueStacks3" ? "BlueStacks2" : $g_sIniEmulator & " " & $g_sIniInstance & $sSpecialParameter, $g_sIniDir)
 				ElseIf FileExists($g_sIniDir & "\" & $g_sBotFileAU3) = 1 Then
-					ShellExecute($g_sBotFileAU3, $g_sIniProfile & " " & $g_sIniEmulator & " " & $g_sIniInstance & $sSpecialParameter, $g_sIniDir)
+					ShellExecute($g_sBotFileAU3, $g_sIniProfile & " " & $g_sIniEmulator = "BlueStacks3" ? "BlueStacks2" : $g_sIniEmulator & " " & $g_sIniInstance & $sSpecialParameter, $g_sIniDir)
 				Else
 					MsgBox($MB_OK, "No Bot found", "Couldn't find any Bot in the Directory, please check if you have the mybot.run.exe or the mybot.run.au3 in the Dir and if you selected the right Dir!", 0, $g_hGui_Main)
 					_GUICtrlStatusBar_SetText($g_hLog, "Error while Running")
@@ -808,7 +808,7 @@ Func CreateShortcut()
 				Else
 					MsgBox($MB_OK, "No Bot found", "Couldn't find any Bot in the Directory, please check if you have the mybot.run.exe or the mybot.run.au3 in the Dir and if you selected the right Dir!", 0, $g_hGui_Main)
 				EndIf
-				$hSC = FileCreateShortcut($g_sIniDir & "\" & $sBotFileName, @DesktopDir & "\MyBot -" & $g_sIniProfile & ".lnk", $g_sIniDir, $g_sIniProfile & " " & $g_sIniEmulator & " " & $g_sIniInstance & $sSpecialParameter, "Shortcut for Bot Profile:" & $g_sIniProfile)
+				$hSC = FileCreateShortcut($g_sIniDir & "\" & $sBotFileName, @DesktopDir & "\MyBot -" & $g_sIniProfile & ".lnk", $g_sIniDir, $g_sIniProfile & " " & $g_sIniEmulator = "BlueStacks3" ? "BlueStacks2" : $g_sIniEmulator & " " & $g_sIniInstance & $sSpecialParameter, "Shortcut for Bot Profile:" & $g_sIniProfile)
 				If $hSC = 1 Then $iCreatedSC += 1
 
 			EndIf
