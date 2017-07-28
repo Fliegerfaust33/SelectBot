@@ -2,5 +2,5 @@
 DisplayVers=3.8.3
 [Changelog]
 Title=Whats new in 3.8.3 ?
-Message=-Fixed Add Support for BlueStacks3
+Message=- Add Support for BlueStacks3
 Date=26th July 2017

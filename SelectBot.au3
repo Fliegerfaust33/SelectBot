@@ -327,13 +327,12 @@ Func GUI_Emulator()
 				Return -1
 			Case $hBtn_Next
 				$g_sSelectedEmulator = GUICtrlRead($hCmb_Emulator)
-				If EmuInstalled() Then
+				If IsAndroidInstalled($g_sSelectedEmulator) Then
 					IniWrite($g_sDirProfiles, $g_sTypedProfile, "Emulator", $g_sSelectedEmulator)
 					GUIDelete($g_hGui_Emulator)
 					_GUICtrlStatusBar_SetText($g_hLog, "Emulator: " & $g_sSelectedEmulator)
 					Return 0
-
-				ElseIf Not EmuInstalled() Then
+				Else
 					$msgEmulator = MsgBox($MB_YESNO, "Error", "Sorry Chief!" & @CRLF & "Couldn't find " & $g_sSelectedEmulator & " installed on your Computer. Did you chose the wrong Emulator ? If you are sure you got it installed please click 'Yes'" & @CRLF & @CRLF & "Do you want to continue?", 0, $g_hGui_Emulator)
 					If $msgEmulator = $IDYes Then
 						IniWrite($g_sDirProfiles, $g_sTypedProfile, "Emulator", $g_sSelectedEmulator)
@@ -361,7 +360,6 @@ Func GUI_Instance()
 	Switch $g_sSelectedEmulator
 		Case "BlueStacks", "BlueStacks2"
 			Return
-
 		Case "Bluestacks3"
 			GUISetState(@SW_SHOW, $g_hGui_Instance)
 			GUICtrlSetData($hLbl_Instance, "Please type in your BlueStacks3 Instance Name! Example: Android , Android_1, Android_2, etc")
@@ -401,7 +399,7 @@ Func GUI_Instance()
 				Return -1
 			Case $hBtn_Next
 				$Inst = GUICtrlRead($hIpt_Instance)
-				$Instances = LaunchConsole(InstanceMgr($g_sSelectedEmulator), "list vms", 1000)
+				$Instances = LaunchConsole(GetInstanceMgrPath($g_sSelectedEmulator), "list vms", 1000)
 				Switch $g_sSelectedEmulator
 					Case "BlueStacks3"
 						$Instance = StringRegExp($Instances, "(?i)" & "Android" & "(?:[_][0-9])?", 3)
@@ -1096,238 +1094,228 @@ Func GUI_ChangeLog($Title, $Message, $Date)
 EndFunc   ;==>GUI_ChangeLog
 
 ; THANKS COSOTE
-
+#Region Android
 Func GetKOPLAYERPath()
-	Local $KOPLAYER_Path = RegRead($HKLM & "\SOFTWARE\KOPLAYER\SETUP\", "InstallPath")
-	If $KOPLAYER_Path = "" Then ; work-a-round
-		$KOPLAYER_Path = @ProgramFilesDir & "\KOPLAYER\"
+	Local $sKOPLAYERPath = RegRead($HKLM & "\SOFTWARE\KOPLAYER\SETUP\", "InstallPath")
+	If $sKOPLAYERPath = "" Then ; work-a-round
+		$sKOPLAYERPath = @ProgramFilesDir & "\KOPLAYER\"
 	Else
-		If StringRight($KOPLAYER_Path, 1) <> "\" Then $KOPLAYER_Path &= "\"
+		If StringRight($sKOPLAYERPath, 1) <> "\" Then $sKOPLAYERPath &= "\"
 	EndIf
-	Return $KOPLAYER_Path
+	Return $sKOPLAYERPath
 EndFunc   ;==>GetKOPLAYERPath
 
 Func GetLeapDroidPath()
-	Local $LeapDroid_Path = RegRead($HKLM & "\SOFTWARE\Leapdroid\Leapdroid VM\", "InstallDir")
-	If $LeapDroid_Path <> "" And FileExists($LeapDroid_Path & "\LeapdroidVM.exe") = 0 Then
-		$LeapDroid_Path = ""
+	Local $sLeapDroidPath = RegRead($HKLM & "\SOFTWARE\Leapdroid\Leapdroid VM\", "InstallDir")
+	If $sLeapDroidPath <> "" And FileExists($sLeapDroidPath & "\LeapdroidVM.exe") = 0 Then
+		$sLeapDroidPath = ""
 	EndIf
 	; pre 1.5.0
-	Local $InstallLocation = RegRead($HKLM & "\SOFTWARE" & $Wow6432Node & "\Microsoft\Windows\CurrentVersion\Uninstall\LeapdroidVM\", "InstallLocation")
-	If $LeapDroid_Path = "" And FileExists($InstallLocation & "\leapdroidvm.ini") = 1 Then
-		$LeapDroid_Path = IniRead($InstallLocation & "\leapdroidvm.ini", "main", "install_path", "")
-		If FileExists($LeapDroid_Path & "\LeapdroidVM.exe") = 0 Then
-			$LeapDroid_Path = ""
+	Local $sInstallLocation = RegRead($HKLM & "\SOFTWARE" & $Wow6432Node & "\Microsoft\Windows\CurrentVersion\Uninstall\LeapdroidVM\", "InstallLocation")
+	If $sLeapDroidPath = "" And FileExists($sInstallLocation & "\leapdroidvm.ini") = 1 Then
+		$sLeapDroidPath = IniRead($sInstallLocation & "\leapdroidvm.ini", "main", "install_path", "")
+		If FileExists($sLeapDroidPath & "\LeapdroidVM.exe") = 0 Then
+			$sLeapDroidPath = ""
 		EndIf
 	EndIf
-	If $LeapDroid_Path = "" And FileExists($InstallLocation & "\LeapdroidVM.exe") = 1 Then
-		$LeapDroid_Path = $InstallLocation
+	If $sLeapDroidPath = "" And FileExists($sInstallLocation & "\LeapdroidVM.exe") = 1 Then
+		$sLeapDroidPath = $sInstallLocation
 	EndIf
-	If $LeapDroid_Path = "" And FileExists(@ProgramFilesDir & "\Leapdroid\VM\LeapdroidVM.exe") = 1 Then
-		$LeapDroid_Path = @ProgramFilesDir & "\Leapdroid\VM"
+	If $sLeapDroidPath = "" And FileExists(@ProgramFilesDir & "\Leapdroid\VM\LeapdroidVM.exe") = 1 Then
+		$sLeapDroidPath = @ProgramFilesDir & "\Leapdroid\VM"
 	EndIf
-	If $LeapDroid_Path <> "" And StringRight($LeapDroid_Path, 1) <> "\" Then $LeapDroid_Path &= "\"
-	Return $LeapDroid_Path
+	If $sLeapDroidPath <> "" And StringRight($sLeapDroidPath, 1) <> "\" Then $sLeapDroidPath &= "\"
+	Return $sLeapDroidPath
 EndFunc   ;==>GetLeapDroidPath
 
 Func GetMEmuPath()
-	Local $MEmu_Path = EnvGet("MEmu_Path") & "\MEmu\"
-	If FileExists($MEmu_Path & "MEmu.exe") = 0 Then
-		Local $InstallLocation = RegRead($HKLM & "\SOFTWARE" & $Wow6432Node & "\Microsoft\Windows\CurrentVersion\Uninstall\MEmu\", "InstallLocation")
-		If @error = 0 And FileExists($InstallLocation & "\MEmu\MEmu.exe") = 1 Then
-			$MEmu_Path = $InstallLocation & "\MEmu\"
+	Local $sMEmuPath = EnvGet("MEmu_Path") & "\MEmu\"
+	If FileExists($sMEmuPath & "MEmu.exe") = 0 Then
+		Local $sInstallLocation = RegRead($HKLM & "\SOFTWARE" & $Wow6432Node & "\Microsoft\Windows\CurrentVersion\Uninstall\MEmu\", "InstallLocation")
+		If @error = 0 And FileExists($sInstallLocation & "\MEmu\MEmu.exe") = 1 Then
+			$sMEmuPath = $sInstallLocation & "\MEmu\"
 		Else
-			Local $DisplayIcon = RegRead($HKLM & "\SOFTWARE" & $Wow6432Node & "\Microsoft\Windows\CurrentVersion\Uninstall\MEmu\", "DisplayIcon")
+			Local $sDisplayIcon = RegRead($HKLM & "\SOFTWARE" & $Wow6432Node & "\Microsoft\Windows\CurrentVersion\Uninstall\MEmu\", "DisplayIcon")
 			If @error = 0 Then
-				Local $iLastBS = StringInStr($DisplayIcon, "\", 0, -1)
-				$MEmu_Path = StringLeft($DisplayIcon, $iLastBS)
-				If StringLeft($MEmu_Path, 1) = """" Then $MEmu_Path = StringMid($MEmu_Path, 2)
+				Local $iLastBS = StringInStr($sDisplayIcon, "\", 0, -1)
+				$sMEmuPath = StringLeft($sDisplayIcon, $iLastBS)
+				If StringLeft($sMEmuPath, 1) = """" Then $sMEmuPath = StringMid($sMEmuPath, 2)
 			Else
-				$MEmu_Path = @ProgramFilesDir & "\Microvirt\MEmu\"
+				$sMEmuPath = @ProgramFilesDir & "\Microvirt\MEmu\"
 			EndIf
 		EndIf
 	EndIf
-	Return $MEmu_Path
+	Return $sMEmuPath
 EndFunc   ;==>GetMEmuPath
 
 Func GetNoxPath()
-	Local $path = RegRead($HKLM & "\SOFTWARE" & $Wow6432Node & "\DuoDianOnline\SetupInfo\", "InstallPath")
+	Local $sNoxPath = RegRead($HKLM & "\SOFTWARE" & $Wow6432Node & "\DuoDianOnline\SetupInfo\", "InstallPath")
 	If @error = 0 Then
-		If StringRight($path, 1) <> "\" Then $path &= "\"
-		$path &= "bin\"
+		If StringRight($sNoxPath, 1) <> "\" Then $sNoxPath &= "\"
+		$sNoxPath &= "bin\"
 	Else
-		$path = ""
+		$sNoxPath = ""
 	EndIf
-	Return $path
+	Return $sNoxPath
 EndFunc   ;==>GetNoxPath
 
 Func GetNoxRtPath()
-	Local $path = RegRead($HKLM & "\SOFTWARE\BigNox\VirtualBox\", "InstallDir")
+	Local $sNoxRtPath = RegRead($HKLM & "\SOFTWARE\BigNox\VirtualBox\", "InstallDir")
 	If @error = 0 Then
-		If StringRight($path, 1) <> "\" Then $path &= "\"
+		If StringRight($sNoxRtPath, 1) <> "\" Then $sNoxRtPath &= "\"
 	Else
-		$path = @ProgramFilesDir & "\Bignox\BigNoxVM\RT\"
+		$sNoxRtPath = @ProgramFilesDir & "\Bignox\BigNoxVM\RT\"
 	EndIf
-	Return $path
+	Return $sNoxRtPath
 EndFunc   ;==>GetNoxRtPath
 
 Func GetDroid4XPath()
-	Local $droid4xPath = RegRead($HKLM & "\SOFTWARE\Droid4X\", "InstallDir")
+	Local $sDroid4XPath = RegRead($HKLM & "\SOFTWARE\Droid4X\", "InstallDir")
 	If @error <> 0 Then
-		Local $DisplayIcon = RegRead($HKLM & "\SOFTWARE" & $Wow6432Node & "\Microsoft\Windows\CurrentVersion\Uninstall\Droid4X\", "DisplayIcon")
+		Local $sDisplayIcon = RegRead($HKLM & "\SOFTWARE" & $Wow6432Node & "\Microsoft\Windows\CurrentVersion\Uninstall\Droid4X\", "DisplayIcon")
 		If @error = 0 Then
-			Local $iLastBS = StringInStr($DisplayIcon, "\", 0, -1)
-			$droid4xPath = StringLeft($DisplayIcon, $iLastBS)
+			Local $iLastBS = StringInStr($sDisplayIcon, "\", 0, -1)
+			$sDroid4XPath = StringLeft($sDisplayIcon, $iLastBS)
 		EndIf
 	EndIf
 	If @error <> 0 Then
-		$droid4xPath = @ProgramFilesDir & "\Droid4X\"
+		$sDroid4XPath = @ProgramFilesDir & "\Droid4X\"
 	EndIf
-	Return $droid4xPath
+	Return $sDroid4XPath
 EndFunc   ;==>GetDroid4XPath
 
-Func GetBsPath()
-	$BsPath = RegRead($HKLM & "\SOFTWARE\BlueStacks\", "InstallDir")
-	$plusMode = RegRead($HKLM & "\SOFTWARE\BlueStacks\", "Engine") = "plus"
-	$frontend_exe = "HD-Frontend.exe"
-	If $plusMode = True Then $frontend_exe = "HD-Plus-Frontend.exe"
-	If $BsPath = "" And FileExists(@ProgramFilesDir & "\BlueStacks\" & $frontend_exe) = 1 Then
-		$BsPath = @ProgramFilesDir & "\BlueStacks\"
+Func GetBlueStacksPath()
+	$sBlueStacksPath = RegRead($HKLM & "\SOFTWARE\BlueStacks\", "InstallDir")
+	$sPlusMode = RegRead($HKLM & "\SOFTWARE\BlueStacks\", "Engine") = "plus"
+	$sFrontend = "HD-Frontend.exe"
+	If $sPlusMode Then $sFrontend = "HD-Plus-Frontend.exe"
+	If $sBlueStacksPath = "" And FileExists(@ProgramFilesDir & "\BlueStacks\" & $sFrontend) = 1 Then
+		$sBlueStacksPath = @ProgramFilesDir & "\BlueStacks\"
 	EndIf
 
-	Return $BsPath
-EndFunc   ;==>GetBsPath
+	Return $sBlueStacksPath
+EndFunc   ;==>GetBlueStacksPath
 
 Func GetiToolsPath()
-	Local $iTools_Path = "" ;RegRead($HKLM & "\SOFTWARE\iTools\iTools VM\", "InstallDir")
-	If $iTools_Path <> "" And FileExists($iTools_Path & "\iToolsAVM.exe") = 0 Then
-		$iTools_Path = ""
+	Local $siTools_Path = ""
+	If $siTools_Path <> "" And FileExists($siTools_Path & "\iToolsAVM.exe") = 0 Then
+		$siTools_Path = ""
 	EndIf
-	Local $InstallLocation = ""
-	Local $DisplayIcon = RegRead($HKLM & "\SOFTWARE" & $Wow6432Node & "\Microsoft\Windows\CurrentVersion\Uninstall\iToolsAVM\", "DisplayIcon")
+	Local $sInstallLocation = ""
+	Local $sDisplayIcon = RegRead($HKLM & "\SOFTWARE" & $Wow6432Node & "\Microsoft\Windows\CurrentVersion\Uninstall\iToolsAVM\", "DisplayIcon")
 	If @error = 0 Then
-		Local $iLastBS = StringInStr($DisplayIcon, "\", 0, -1) - 1
-		$InstallLocation = StringLeft($DisplayIcon, $iLastBS)
+		Local $iLastBS = StringInStr($sDisplayIcon, "\", 0, -1) - 1
+		$sInstallLocation = StringLeft($sDisplayIcon, $iLastBS)
 	EndIf
-	If $iTools_Path = "" And FileExists($InstallLocation & "\iToolsAVM.exe") = 1 Then
-		$iTools_Path = $InstallLocation
+	If $siTools_Path = "" And FileExists($sInstallLocation & "\iToolsAVM.exe") = 1 Then
+		$siTools_Path = $sInstallLocation
 	EndIf
-	If $iTools_Path = "" And FileExists(@ProgramFilesDir & "\iToolsAVM\iToolsAVM.exe") = 1 Then
-		$iTools_Path = @ProgramFilesDir & "\iToolsAVM"
+	If $siTools_Path = "" And FileExists(@ProgramFilesDir & "\iToolsAVM\iToolsAVM.exe") = 1 Then
+		$siTools_Path = @ProgramFilesDir & "\iToolsAVM"
 	EndIf
 	SetError(0, 0, 0)
-	If $iTools_Path <> "" And StringRight($iTools_Path, 1) <> "\" Then $iTools_Path &= "\"
-	Return StringReplace($iTools_Path, "\\", "\")
+	If $siTools_Path <> "" And StringRight($siTools_Path, 1) <> "\" Then $siTools_Path &= "\"
+	Return StringReplace($siTools_Path, "\\", "\")
 EndFunc   ;==>GetiToolsPath
 
-Func EmuInstalled()
+Func IsAndroidInstalled($sAndroid)
+	Local $sPath, $sFile, $bIsInstalled = False
 
-	Switch $g_sSelectedEmulator
+	Switch $sAndroid
 		Case "MEmu"
-			$EmuPath = GetMEmuPath()
-			$EmuExe = "MEmu.exe"
-
+			$sPath = GetMEmuPath()
+			$sFile = "MEmu.exe"
 		Case "Droid4X"
-			$EmuPath = GetDroid4XPath()
-			$EmuExe = "Droid4X.exe"
-
+			$sPath = GetDroid4XPath()
+			$sFile = "Droid4X.exe"
 		Case "Nox"
-			$EmuPath = GetNoxPath()
-			$EmuExe = "Nox.exe"
-
+			$sPath = GetNoxPath()
+			$sFile = "Nox.exe"
 		Case "LeapDroid"
-			$EmuPath = GetLeapDroidPath()
-			$EmuExe = "LeapdroidVM.exe"
-
+			$sPath = GetLeapDroidPath()
+			$sFile = "LeapdroidVM.exe"
 		Case "KOPLAYER"
-			$EmuPath = GetKOPLAYERPath()
-			$EmuExe = "KOPLAYER.exe"
-
+			$sPath = GetKOPLAYERPath()
+			$sFile = "KOPLAYER.exe"
 		Case "BlueStacks" Or "BlueStacks2" Or "BlueStacks3"
-			$EmuPath = GetBsPath()
-			$plusMode = RegRead($HKLM & "\SOFTWARE\BlueStacks\", "Engine") = "plus"
-			$EmuExe = "HD-Frontend.exe"
-			If $plusMode = True Then $EmuExe = "HD-Plus-Frontend.exe"
-
+			$sPath = GetBlueStacksPath()
+			$bPlusMode = RegRead($HKLM & "\SOFTWARE\BlueStacks\", "Engine") = "plus"
+			$sFile = "HD-Frontend.exe"
+			If $bPlusMode Then $sFile = "HD-Plus-Frontend.exe"
 		Case "iTools"
-			$EmuPath = GetiToolsPath()
-			$EmuExe = "iToolsAVM.exe"
+			$sPath = GetiToolsPath()
+			$sFile = "iToolsAVM.exe"
 	EndSwitch
 
-	If FileExists($EmuPath & $EmuExe) = 1 Then
-		Return True
-	Else
-		Return False
-	EndIf
-EndFunc   ;==>EmuInstalled
+	If FileExists($sPath & $sFile) = 1 Then $bIsInstalled = True
 
-Func InstanceMgr($sEmulator)
+	Return $bIsInstalled
+EndFunc   ;==>IsAndroidInstalled
 
-	Switch $sEmulator
+Func GetInstanceMgrPath($sAndroid)
+	Local $sManagerPath
+
+	Switch $sAndroid
 		Case "BlueStacks3"
-			$MgrPath = GetBsPath() & "BstkVMMgr.exe"
+			$sManagerPath = GetBlueStacksPath() & "BstkVMMgr.exe"
 		Case "MEmu"
-			$MgrPath = EnvGet("MEmuHyperv_Path") & "\MEmuManage.exe"
-			If FileExists($MgrPath) = 0 Then
-				$MgrPath = GetMEmuPath() & "..\MEmuHyperv\MEmuManage.exe"
+			$sManagerPath = EnvGet("MEmuHyperv_Path") & "\MEmuManage.exe"
+			If FileExists($sManagerPath) = 0 Then
+				$sManagerPath = GetMEmuPath() & "..\MEmuHyperv\MEmuManage.exe"
 			EndIf
-
 		Case "Droid4X"
-			$VirtualBox_Path = RegRead($HKLM & "\SOFTWARE\Oracle\VirtualBox\", "InstallDir")
+			$sVirtualBox_Path = RegRead($HKLM & "\SOFTWARE\Oracle\VirtualBox\", "InstallDir")
 			If @error <> 0 Then
-				$VirtualBox_Path = @ProgramFilesDir & "\Oracle\VirtualBox\"
+				$sVirtualBox_Path = @ProgramFilesDir & "\Oracle\VirtualBox\"
 			EndIf
-			$VirtualBox_Path = StringReplace($VirtualBox_Path, "\\", "\")
-			$MgrPath = $VirtualBox_Path & "VBoxManage.exe"
-
+			$sVirtualBox_Path = StringReplace($sVirtualBox_Path, "\\", "\")
+			$sManagerPath = $sVirtualBox_Path & "VBoxManage.exe"
 		Case "Nox"
-			$MgrPath = GetNoxRtPath() & "BigNoxVMMgr.exe"
-
+			$sManagerPath = GetNoxRtPath() & "BigNoxVMMgr.exe"
 		Case "LeapDroid"
-			$MgrPath = GetLeapDroidPath() & "VBoxManage.exe"
-
+			$sManagerPath = GetLeapDroidPath() & "VBoxManage.exe"
 		Case "KOPLAYER"
-			$MgrPath = GetKOPLAYERPath() & "vbox\VBoxManage.exe"
-
+			$sManagerPath = GetKOPLAYERPath() & "vbox\VBoxManage.exe"
 		Case "iTools"
-			$VirtualBox_Path = RegRead($HKLM & "\SOFTWARE\Oracle\VirtualBox\", "InstallDir")
+			$sVirtualBox_Path = RegRead($HKLM & "\SOFTWARE\Oracle\VirtualBox\", "InstallDir")
 			If @error <> 0 And FileExists(@ProgramFilesDir & "\Oracle\VirtualBox\") Then
-				$VirtualBox_Path = @ProgramFilesDir & "\Oracle\VirtualBox\"
+				$sVirtualBox_Path = @ProgramFilesDir & "\Oracle\VirtualBox\"
 			EndIf
-			$VirtualBox_Path = StringReplace($VirtualBox_Path, "\\", "\")
-			$MgrPath = $VirtualBox_Path & "VBoxManage.exe"
+			$sVirtualBox_Path = StringReplace($sVirtualBox_Path, "\\", "\")
+			$sManagerPath = $sVirtualBox_Path & "VBoxManage.exe"
 
 	EndSwitch
 
-	Return $MgrPath
+	Return $sManagerPath
 
-EndFunc   ;==>InstanceMgr
+EndFunc   ;==>GetInstanceMgrPath
+#EndRegion Android
+#Region CMD
+Func LaunchConsole($sCMD, $sParameter, $bProcessKilled, $iTimeOut = 10000)
 
-Func LaunchConsole($cmd, $param, $process_killed, $timeout = 10000)
 
+	Local $sData, $iPID, $hTimer
 
-	Local $data, $pid, $hTimer
-
-	If StringLen($param) > 0 Then $cmd &= " " & $param
+	If StringLen($sParameter) > 0 Then $sCMD &= " " & $sParameter
 
 	$hTimer = TimerInit()
-	$process_killed = False
+	$bProcessKilled = False
 
-	$pid = Run($cmd, "", @SW_HIDE, $STDERR_MERGED)
-	If $pid = 0 Then
+	$iPID = Run($sCMD, "", @SW_HIDE, $STDERR_MERGED)
+	If $iPID = 0 Then
 		Return
 	EndIf
 
 	Local $hProcess
 	If _WinAPI_GetVersion() >= 6.0 Then
-		$hProcess = _WinAPI_OpenProcess($PROCESS_QUERY_LIMITED_INFORMATION, 0, $pid)
+		$hProcess = _WinAPI_OpenProcess($PROCESS_QUERY_LIMITED_INFORMATION, 0, $iPID)
 	Else
-		$hProcess = _WinAPI_OpenProcess($PROCESS_QUERY_INFORMATION, 0, $pid)
+		$hProcess = _WinAPI_OpenProcess($PROCESS_QUERY_INFORMATION, 0, $iPID)
 	EndIf
 
-	$data = ""
+	$sData = ""
 	$iDelaySleep = 100
-	Local $timeout_sec = Round($timeout / 1000)
+	Local $iTimeOut_Sec = Round($iTimeOut / 1000)
 
 	While True
 		If $hProcess Then
@@ -1335,9 +1323,9 @@ Func LaunchConsole($cmd, $param, $process_killed, $timeout = 10000)
 		Else
 			Sleep($iDelaySleep)
 		EndIf
-		$data &= StdoutRead($pid)
+		$sData &= StdoutRead($iPID)
 		If @error Then ExitLoop
-		If ($timeout > 0 And TimerDiff($hTimer) > $timeout) Then ExitLoop
+		If ($iTimeOut > 0 And TimerDiff($hTimer) > $iTimeOut) Then ExitLoop
 	WEnd
 
 	If $hProcess Then
@@ -1345,21 +1333,23 @@ Func LaunchConsole($cmd, $param, $process_killed, $timeout = 10000)
 		$hProcess = 0
 	EndIf
 
-	CleanLaunchOutput($data)
+	CleanLaunchOutput($sData)
 
-	If ProcessExists($pid) Then
-		If ProcessClose($pid) = 1 Then
-			$process_killed = True
+	If ProcessExists($iPID) Then
+		If ProcessClose($iPID) = 1 Then
+			$bProcessKilled = True
 		EndIf
 	EndIf
-	StdioClose($pid)
-	Return $data
+	StdioClose($iPID)
+	Return $sData
 EndFunc   ;==>LaunchConsole
 
 Func CleanLaunchOutput(ByRef $output)
+
 	$output = StringReplace($output, @CR & @CR, "")
 	$output = StringReplace($output, @CRLF & @CRLF, "")
 	If StringRight($output, 1) = @LF Then $output = StringLeft($output, StringLen($output) - 1)
 	If StringRight($output, 1) = @CR Then $output = StringLeft($output, StringLen($output) - 1)
 EndFunc   ;==>CleanLaunchOutput
 
+#EndRegion CMD
