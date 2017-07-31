@@ -5,7 +5,7 @@
 #AutoIt3Wrapper_UseUpx=y
 #AutoIt3Wrapper_Res_Comment=For MyBot.run. Made by Fliegerfaust
 #AutoIt3Wrapper_Res_Description=SelectBot for MyBot
-#AutoIt3Wrapper_Res_Fileversion=3.8.3.0
+#AutoIt3Wrapper_Res_Fileversion=3.8.3.1
 #AutoIt3Wrapper_Res_LegalCopyright=Fliegerfaust
 #AutoIt3Wrapper_Run_Tidy=y
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -44,7 +44,7 @@
 
 Global $g_sBotFile = "mybot.run.exe"
 Global $g_sBotFileAU3 = "mybot.run.au3"
-Global $g_sVersion = "3.8.3"
+Global $g_sVersion = "3.8.3.1"
 Global $g_sDirProfiles = @MyDocumentsDir & "\Profiles.ini"
 Global $g_hGui_Main, $g_hGui_Profile, $g_hGui_Emulator, $g_hGui_Instance, $g_hGui_Dir, $g_hGui_Parameter, $g_hGUI_AutoStart, $g_hGUI_Edit, $g_hListview_Main, $g_hLst_AutoStart, $g_hLog, $g_hProgress, $g_hBtn_Shortcut, $g_hBtn_AutoStart, $g_hContext_Main
 Global $g_hListview_Instances, $g_hLblUpdateAvailable
@@ -773,13 +773,15 @@ Func RunSetup()
 			$sLstbx_SelItem = _GUICtrlListView_GetItemText($g_hListview_Main, $Lstbx_Sel[$i])
 			If $sLstbx_SelItem <> "" Then
 				ReadIni($sLstbx_SelItem)
+				Local $sEmulator = $g_sIniEmulator
+				If $g_sIniEmulator = "BlueStacks3" Then $sEmulator = "BlueStacks2"
 				$aParameters = StringSplit($g_sIniParameters, "")
 				Local $sSpecialParameter = $aParameters[1] = 1 ? " /nowatchdog" : "" & $aParameters[2] = 1 ? " /dock1" : "" & $aParameters[3] = 1 ? " /dock2" : "" & $aParameters[4] = 1 ? " /dpiaware" : ""
 				_GUICtrlStatusBar_SetText($g_hLog, "Running: " & $g_sIniProfile)
 				If FileExists($g_sIniDir & "\" & $g_sBotFile) = 1 Then
-					ShellExecute($g_sBotFile, $g_sIniProfile & " " & $g_sIniEmulator = "BlueStacks3" ? "BlueStacks2" : $g_sIniEmulator & " " & $g_sIniInstance & $sSpecialParameter, $g_sIniDir)
+					ShellExecute($g_sBotFile, $g_sIniProfile & " " & $sEmulator & " " & $g_sIniInstance & $sSpecialParameter, $g_sIniDir)
 				ElseIf FileExists($g_sIniDir & "\" & $g_sBotFileAU3) = 1 Then
-					ShellExecute($g_sBotFileAU3, $g_sIniProfile & " " & $g_sIniEmulator = "BlueStacks3" ? "BlueStacks2" : $g_sIniEmulator & " " & $g_sIniInstance & $sSpecialParameter, $g_sIniDir)
+					ShellExecute($g_sBotFileAU3, $g_sIniProfile & " " & $sEmulator & " " & $g_sIniInstance & $sSpecialParameter, $g_sIniDir)
 				Else
 					MsgBox($MB_OK, "No Bot found", "Couldn't find any Bot in the Directory, please check if you have the mybot.run.exe or the mybot.run.au3 in the Dir and if you selected the right Dir!", 0, $g_hGui_Main)
 					_GUICtrlStatusBar_SetText($g_hLog, "Error while Running")
@@ -797,6 +799,8 @@ Func CreateShortcut()
 			$sLstbx_SelItem = _GUICtrlListView_GetItemText($g_hListview_Main, $Lstbx_Sel[$i])
 			If $sLstbx_SelItem <> "" Then
 				ReadIni($sLstbx_SelItem)
+				Local $sEmulator = $g_sIniEmulator
+				If $g_sIniEmulator = "BlueStacks3" Then $sEmulator = "BlueStacks2"
 				$aParameters = StringSplit($g_sIniParameters, "")
 				Local $sSpecialParameter = $aParameters[1] = 1 ? " /nowatchdog" : "" & $aParameters[2] = 1 ? " /dock1" : "" & $aParameters[3] = 1 ? " /dock2" : "" & $aParameters[4] = 1 ? " /dpiaware" : ""
 				If FileExists($g_sIniDir & "\" & $g_sBotFile) Then
@@ -806,7 +810,7 @@ Func CreateShortcut()
 				Else
 					MsgBox($MB_OK, "No Bot found", "Couldn't find any Bot in the Directory, please check if you have the mybot.run.exe or the mybot.run.au3 in the Dir and if you selected the right Dir!", 0, $g_hGui_Main)
 				EndIf
-				$hSC = FileCreateShortcut($g_sIniDir & "\" & $sBotFileName, @DesktopDir & "\MyBot -" & $g_sIniProfile & ".lnk", $g_sIniDir, $g_sIniProfile & " " & $g_sIniEmulator = "BlueStacks3" ? "BlueStacks2" : $g_sIniEmulator & " " & $g_sIniInstance & $sSpecialParameter, "Shortcut for Bot Profile:" & $g_sIniProfile)
+				$hSC = FileCreateShortcut($g_sIniDir & "\" & $sBotFileName, @DesktopDir & "\MyBot -" & $g_sIniProfile & ".lnk", $g_sIniDir, $g_sIniProfile & " " & $sEmulator & " " & $g_sIniInstance & $sSpecialParameter, "Shortcut for Bot Profile:" & $g_sIniProfile)
 				If $hSC = 1 Then $iCreatedSC += 1
 
 			EndIf

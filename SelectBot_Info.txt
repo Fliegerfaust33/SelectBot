@@ -1,6 +1,6 @@
 [General]
-DisplayVers=3.8.3
+DisplayVers=3.8.3.1
 [Changelog]
 Title=Whats new in 3.8.3 ?
-Message=- Add Support for BlueStacks3
-Date=26th July 2017
+Message=- Add Support for BlueStacks3%%3.8.3.1:%%-Fix wrong start when Instances are in use
+Date=31th July 2017
