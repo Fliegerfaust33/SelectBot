@@ -1,3 +1,4 @@
+#RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=Icon\Icon.ico
 #AutoIt3Wrapper_Outfile=SelectBot.Exe
@@ -5,11 +6,10 @@
 #AutoIt3Wrapper_UseUpx=y
 #AutoIt3Wrapper_Res_Comment=For MyBot.run. Made by Fliegerfaust
 #AutoIt3Wrapper_Res_Description=SelectBot for MyBot
-#AutoIt3Wrapper_Res_Fileversion=3.8.3.1
+#AutoIt3Wrapper_Res_Fileversion=3.8.4
 #AutoIt3Wrapper_Res_LegalCopyright=Fliegerfaust
 #AutoIt3Wrapper_Run_Tidy=y
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
-#RequireAdmin
 
 #include <File.au3>
 #include <FileConstants.au3>
@@ -44,7 +44,7 @@
 
 Global $g_sBotFile = "mybot.run.exe"
 Global $g_sBotFileAU3 = "mybot.run.au3"
-Global $g_sVersion = "3.8.3.1"
+Global $g_sVersion = "3.8.4"
 Global $g_sDirProfiles = @MyDocumentsDir & "\Profiles.ini"
 Global $g_hGui_Main, $g_hGui_Profile, $g_hGui_Emulator, $g_hGui_Instance, $g_hGui_Dir, $g_hGui_Parameter, $g_hGUI_AutoStart, $g_hGUI_Edit, $g_hListview_Main, $g_hLst_AutoStart, $g_hLog, $g_hProgress, $g_hBtn_Shortcut, $g_hBtn_AutoStart, $g_hContext_Main
 Global $g_hListview_Instances, $g_hLblUpdateAvailable
@@ -504,6 +504,8 @@ Func GUI_PARAMETER()
 	GUICtrlSetTip(-1, "Auto Dock and Shrink the Bot Window to the Android when the Bot launches")
 	$hChk_DpiAwarness = GUICtrlCreateCheckbox("DPI Awareness", 160, 55)
 	GUICtrlSetTip(-1, "Launch the Bot in DPI Awareness Mode")
+	$hChkDebugMode = GUICtrlCreateCheckbox("Debug Mode", 160, 75)
+	GUICtrlSetTip(-1, "Launch the Bot with Debug Mode enabled")
 
 	$hBtn_Finish = GUICtrlCreateButton("Finish", 72, 130, 97, 25, $WS_GROUP)
 	GUISetState()
@@ -524,6 +526,7 @@ Func GUI_PARAMETER()
 				$iEndResult &= GUICtrlRead($hChk_StartBotDocked) = $GUI_CHECKED ? 1 : 0
 				$iEndResult &= GUICtrlRead($hChk_StartBotDockedAndShrinked) = $GUI_CHECKED ? 1 : 0
 				$iEndResult &= GUICtrlRead($hChk_DpiAwarness) = $GUI_CHECKED ? 1 : 0
+				$iEndResult &= GUICtrlRead($hChkDebugMode) = $GUI_CHECKED ? 1 : 0
 				IniWrite($g_sDirProfiles, $g_sTypedProfile, "Parameters", $iEndResult)
 				GUIDelete($g_hGui_Parameter)
 				ExitLoop
@@ -565,12 +568,15 @@ Func GUI_Edit()
 	GUICtrlSetTip(-1, "Auto Dock and Shrink the Bot Window to the Android when the Bot launches")
 	$hChk_DpiAwarness = GUICtrlCreateCheckbox("DPI Awareness", 160, 135)
 	GUICtrlSetTip(-1, "Launch the Bot in DPI Awareness Mode")
+	$hChk_DebugMode = GUICtrlCreateCheckbox("Debug Mode", 160, 155)
+	GUICtrlSetTip(-1, "Launch the Bot in Debug Mode")
 
 	Local $aParameters = StringSplit($g_sIniParameters, "", 2)
 	If $aParameters[0] = 1 Then GUICtrlSetState($hChk_NoWatchdog, $GUI_CHECKED)
 	If $aParameters[1] = 1 Then GUICtrlSetState($hChk_StartBotDocked, $GUI_CHECKED)
 	If $aParameters[2] = 1 Then GUICtrlSetState($hChk_StartBotDockedAndShrinked, $GUI_CHECKED)
 	If $aParameters[3] = 1 Then GUICtrlSetState($hChk_DpiAwarness, $GUI_CHECKED)
+	If $aParameters[4] = 1 Then GUICtrlSetState($hChk_DebugMode, $GUI_CHECKED)
 
 	$hBtn_Save = GUICtrlCreateButton("Save and Close", 76, 200, 97, 25, $WS_GROUP)
 	GUISetState()
@@ -650,6 +656,7 @@ Func GUI_Edit()
 				$iEndResult &= GUICtrlRead($hChk_StartBotDocked) = $GUI_CHECKED ? 1 : 0
 				$iEndResult &= GUICtrlRead($hChk_StartBotDockedAndShrinked) = $GUI_CHECKED ? 1 : 0
 				$iEndResult &= GUICtrlRead($hChk_DpiAwarness) = $GUI_CHECKED ? 1 : 0
+				$iEndResult &= GUICtrlRead($hChk_DebugMode) = $GUI_CHECKED ? 1 : 0
 				IniDelete($g_sDirProfiles, $sLstbx_SelItem)
 				IniWrite($g_sDirProfiles, $sSelectedProfile, "Profile", $sSelectedProfile)
 				IniWrite($g_sDirProfiles, $sSelectedProfile, "Emulator", $sSelectedEmulator)
@@ -776,7 +783,7 @@ Func RunSetup()
 				Local $sEmulator = $g_sIniEmulator
 				If $g_sIniEmulator = "BlueStacks3" Then $sEmulator = "BlueStacks2"
 				$aParameters = StringSplit($g_sIniParameters, "")
-				Local $sSpecialParameter = $aParameters[1] = 1 ? " /nowatchdog" : "" & $aParameters[2] = 1 ? " /dock1" : "" & $aParameters[3] = 1 ? " /dock2" : "" & $aParameters[4] = 1 ? " /dpiaware" : ""
+				Local $sSpecialParameter = $aParameters[1] = 1 ? " /nowatchdog" : "" & $aParameters[2] = 1 ? " /dock1" : "" & $aParameters[3] = 1 ? " /dock2" : "" & $aParameters[4] = 1 ? " /dpiaware" : "" & $aParameters[5] = 1 ? " /debug" : ""
 				_GUICtrlStatusBar_SetText($g_hLog, "Running: " & $g_sIniProfile)
 				If FileExists($g_sIniDir & "\" & $g_sBotFile) = 1 Then
 					ShellExecute($g_sBotFile, $g_sIniProfile & " " & $sEmulator & " " & $g_sIniInstance & $sSpecialParameter, $g_sIniDir)
@@ -802,7 +809,7 @@ Func CreateShortcut()
 				Local $sEmulator = $g_sIniEmulator
 				If $g_sIniEmulator = "BlueStacks3" Then $sEmulator = "BlueStacks2"
 				$aParameters = StringSplit($g_sIniParameters, "")
-				Local $sSpecialParameter = $aParameters[1] = 1 ? " /nowatchdog" : "" & $aParameters[2] = 1 ? " /dock1" : "" & $aParameters[3] = 1 ? " /dock2" : "" & $aParameters[4] = 1 ? " /dpiaware" : ""
+				Local $sSpecialParameter = $aParameters[1] = 1 ? " /nowatchdog" : "" & $aParameters[2] = 1 ? " /dock1" : "" & $aParameters[3] = 1 ? " /dock2" : "" & $aParameters[4] = 1 ? " /dpiaware" : "" & $aParameters[5] = 1 ? " /debug" : ""
 				If FileExists($g_sIniDir & "\" & $g_sBotFile) Then
 					$sBotFileName = $g_sBotFile
 				ElseIf FileExists($g_sIniDir & "\" & $g_sBotFileAU3) Then
@@ -876,7 +883,17 @@ Func GetBotVers()
 
 		FileClose($hBotVers)
 		If $aSections[$i] <> "Options" Then
-			If IsArray($aBotVers) Then IniWrite($g_sDirProfiles, $aSections[$i], "BotVers", $aBotVers[0])
+			If IsArray($aBotVers) Then
+				IniWrite($g_sDirProfiles, $aSections[$i], "BotVers", $aBotVers[0])
+			Else
+				$hBotVers = FileOpen($g_sIniDir & "\mybot.run.version.au3")
+
+				$sBotVers = FileRead($hBotVers)
+				$aBotVers = StringRegExp($sBotVers, "(?i)v([0-9]+)(?:\.[0-9]+)?(?:\.[0-9]+)?", 2)
+
+				FileClose($hBotVers)
+				If IsArray($aBotVers) Then IniWrite($g_sDirProfiles, $aSections[$i], "BotVers", $aBotVers[0])
+			EndIf
 		EndIf
 	Next
 EndFunc   ;==>GetBotVers

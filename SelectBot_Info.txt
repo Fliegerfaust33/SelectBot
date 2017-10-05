@@ -1,6 +1,6 @@
 [General]
-DisplayVers=3.8.3.1
+DisplayVers=3.8.4
 [Changelog]
-Title=Whats new in 3.8.3 ?
-Message=- Add Support for BlueStacks3%%3.8.3.1:%%-Fix wrong start when Instances are in use
-Date=31th July 2017
+Title=Whats new in 3.8.4 ?
+Message=- Add /debug Parameter in Special Parameters%- Fix Bot Version not showing in 7.2.6
+Date=3rd October 2017
