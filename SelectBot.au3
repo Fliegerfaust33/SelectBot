@@ -1,4 +1,4 @@
-#RequireAdmin
+
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=Icon\Icon.ico
 #AutoIt3Wrapper_Outfile=SelectBot.Exe
@@ -907,7 +907,8 @@ Func ReadIni($sSelectedProfile)
 	$g_sIniEmulator = IniRead($g_sDirProfiles, $sSelectedProfile, "Emulator", "")
 	$g_sIniInstance = IniRead($g_sDirProfiles, $sSelectedProfile, "Instance", "")
 	$g_sIniDir = IniRead($g_sDirProfiles, $sSelectedProfile, "Dir", "")
-	$g_sIniParameters = IniRead($g_sDirProfiles, $sSelectedProfile, "Parameters", 0000)
+	$g_sIniParameters = IniRead($g_sDirProfiles, $sSelectedProfile, "Parameters", 00000)
+	If StringLen($g_sIniParameters) < 5 Then $g_sIniParameters &= 0
 
 EndFunc   ;==>ReadIni
 
