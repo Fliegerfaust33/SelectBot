@@ -1,6 +1,6 @@
 [General]
-DisplayVers=3.8.4
+DisplayVers=3.8.5
 [Changelog]
-Title=Whats new in 3.8.4 ?
-Message=- Add /debug Parameter in Special Parameters%- Fix Bot Version not showing in 7.2.6
-Date=3rd October 2017
+Title=Whats new in 3.8.5 ?
+Message=- Add Mini GUI Support (May need to delete Profiles and create new if not working)
+Date=29th October 2017
