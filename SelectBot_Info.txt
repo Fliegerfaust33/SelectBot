@@ -1,6 +1,6 @@
 [General]
-DisplayVers=3.8.5
+DisplayVers=3.8.6
 [Changelog]
-Title=Whats new in 3.8.5 ?
-Message=- Add Mini GUI Support (May need to delete Profiles and create new if not working)
-Date=29th October 2017
+Title=Whats new in 3.8.6 ?
+Message=- Add Hide Android Option (May need to delete Profiles and create new if not working)
+Date=12th November 2017

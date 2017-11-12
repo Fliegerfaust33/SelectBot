@@ -1,3 +1,4 @@
+#RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=Icon\Icon.ico
 #AutoIt3Wrapper_Outfile=SelectBot.Exe
@@ -5,10 +6,12 @@
 #AutoIt3Wrapper_UseUpx=y
 #AutoIt3Wrapper_Res_Comment=For MyBot.run. Made by Fliegerfaust
 #AutoIt3Wrapper_Res_Description=SelectBot for MyBot
-#AutoIt3Wrapper_Res_Fileversion=3.8.5.0
+#AutoIt3Wrapper_Res_Fileversion=3.8.6.0
 #AutoIt3Wrapper_Res_LegalCopyright=Fliegerfaust
 #AutoIt3Wrapper_Run_Tidy=y
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
+
+
 
 #include <File.au3>
 #include <FileConstants.au3>
@@ -43,13 +46,14 @@
 
 Global $g_sBotFile = "mybot.run.exe"
 Global $g_sBotFileAU3 = "mybot.run.au3"
-Global $g_sVersion = "3.8.5"
+Global $g_sVersion = "3.8.6"
 Global $g_sDirProfiles = @MyDocumentsDir & "\Profiles.ini"
 Global $g_hGui_Main, $g_hGui_Profile, $g_hGui_Emulator, $g_hGui_Instance, $g_hGui_Dir, $g_hGui_Parameter, $g_hGUI_AutoStart, $g_hGUI_Edit, $g_hListview_Main, $g_hLst_AutoStart, $g_hLog, $g_hProgress, $g_hBtn_Shortcut, $g_hBtn_AutoStart, $g_hContext_Main
 Global $g_hListview_Instances, $g_hLblUpdateAvailable
 Global $g_aGuiPos_Main
 Global $g_sTypedProfile, $g_sSelectedEmulator
 Global $g_sIniProfile, $g_sIniEmulator, $g_sIniInstance, $g_sIniDir, $g_sIniParameters
+Global $g_iParameters = 7
 Global Enum $eRun = 1000, $eEdit, $eDelete, $eNickname
 
 If @OSArch = "X86" Then
@@ -493,7 +497,7 @@ EndFunc   ;==>GUI_DIR
 Func GUI_PARAMETER()
 	Local $iEndResult
 
-	$g_hGui_Parameter = GUICreate("Special Parameter", 258, 167, $g_aGuiPos_Main[0], $g_aGuiPos_Main[1] + 150, -1, -1, $g_hGui_Main)
+	$g_hGui_Parameter = GUICreate("Special Parameter", 258, 190, $g_aGuiPos_Main[0], $g_aGuiPos_Main[1] + 150, -1, -1, $g_hGui_Main)
 	GUICtrlCreateLabel("Check Options if you want to run the Bot with special Parameters. These are not mandatory!", 24, 8, 204, 57)
 	$hChk_NoWatchdog = GUICtrlCreateCheckbox("No Watchdog", 8, 55)
 	GUICtrlSetTip(-1, "Check this to run the Bot without Watchdog")
@@ -507,8 +511,11 @@ Func GUI_PARAMETER()
 	GUICtrlSetTip(-1, "Launch the Bot with Debug Mode enabled")
 	$hChk_MiniGUIMode = GUICtrlCreateCheckbox("Mini GUI Mode", 160, 95)
 	GUICtrlSetTip(-1, "Launch the Bot in Mini GUI Mode")
+	$hChk_HideAndroid = GUICtrlCreateCheckbox("Hide Android", 8, 115)
+	GUICtrlSetTip(-1, "Hide the Android Emulator Window")
 
-	$hBtn_Finish = GUICtrlCreateButton("Finish", 72, 130, 97, 25, $WS_GROUP)
+
+	$hBtn_Finish = GUICtrlCreateButton("Finish", 72, 160, 97, 25, $WS_GROUP)
 	GUISetState()
 
 
@@ -529,6 +536,7 @@ Func GUI_PARAMETER()
 				$iEndResult &= GUICtrlRead($hChk_DpiAwarness) = $GUI_CHECKED ? 1 : 0
 				$iEndResult &= GUICtrlRead($hChkDebugMode) = $GUI_CHECKED ? 1 : 0
 				$iEndResult &= GUICtrlRead($hChk_MiniGUIMode) = $GUI_CHECKED ? 1 : 0
+				$iEndResult &= GUICtrlRead($hChk_HideAndroid) = $GUI_CHECKED ? 1 : 0
 				IniWrite($g_sDirProfiles, $g_sTypedProfile, "Parameters", $iEndResult)
 				GUIDelete($g_hGui_Parameter)
 				ExitLoop
@@ -552,7 +560,7 @@ Func GUI_Edit()
 	$sLstbx_SelItem = _GUICtrlListView_GetItemText($g_hListview_Main, $aLstbx_GetSelTxt[1])
 	ReadIni($sLstbx_SelItem)
 	$sSelectedFolder = $g_sIniDir
-	$g_hGUI_Edit = GUICreate("Edit INI", 258, 230, $g_aGuiPos_Main[0], $g_aGuiPos_Main[1] + 150, -1, -1, $g_hGui_Main)
+	$g_hGUI_Edit = GUICreate("Edit INI", 258, 260, $g_aGuiPos_Main[0], $g_aGuiPos_Main[1] + 150, -1, -1, $g_hGui_Main)
 	$hIpt_Profile = GUICtrlCreateInput($g_sIniProfile, 112, 8, 137, 21)
 	$hCmb_Emulator = GUICtrlCreateCombo($g_sIniEmulator, 112, 40, 137, 21, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL))
 	$hIpt_Instance = GUICtrlCreateInput($g_sIniInstance, 112, 72, 137, 21)
@@ -574,6 +582,15 @@ Func GUI_Edit()
 	GUICtrlSetTip(-1, "Launch the Bot in Debug Mode")
 	$hChk_MiniGUIMode = GUICtrlCreateCheckbox("Mini GUI Mode", 160, 175)
 	GUICtrlSetTip(-1, "Launch the Bot in Mini GUI Mode")
+	$hChk_HideAndroid = GUICtrlCreateCheckbox("Hide Android", 8, 195)
+	GUICtrlSetTip(-1, "Hide the Android Emulator Window")
+
+	If StringLen($g_sIniParameters) < $g_iParameters Then
+		Local $iCount = $g_iParameters - StringLen($g_sIniParameters)
+		For $i = 0 To $iCount
+			$g_sIniParameters &= 0
+		Next
+	EndIf
 
 	Local $aParameters = StringSplit($g_sIniParameters, "", 2)
 	If $aParameters[0] = 1 Then GUICtrlSetState($hChk_NoWatchdog, $GUI_CHECKED)
@@ -582,8 +599,9 @@ Func GUI_Edit()
 	If $aParameters[3] = 1 Then GUICtrlSetState($hChk_DpiAwarness, $GUI_CHECKED)
 	If $aParameters[4] = 1 Then GUICtrlSetState($hChk_DebugMode, $GUI_CHECKED)
 	If $aParameters[5] = 1 Then GUICtrlSetState($hChk_MiniGUIMode, $GUI_CHECKED)
+	If $aParameters[6] = 1 Then GUICtrlSetState($hChk_HideAndroid, $GUI_CHECKED)
 
-	$hBtn_Save = GUICtrlCreateButton("Save and Close", 76, 200, 97, 25, $WS_GROUP)
+	$hBtn_Save = GUICtrlCreateButton("Save and Close", 76, 230, 97, 25, $WS_GROUP)
 	GUISetState()
 
 
@@ -663,6 +681,7 @@ Func GUI_Edit()
 				$iEndResult &= GUICtrlRead($hChk_DpiAwarness) = $GUI_CHECKED ? 1 : 0
 				$iEndResult &= GUICtrlRead($hChk_DebugMode) = $GUI_CHECKED ? 1 : 0
 				$iEndResult &= GUICtrlRead($hChk_MiniGUIMode) = $GUI_CHECKED ? 1 : 0
+				$iEndResult &= GUICtrlRead($hChk_HideAndroid) = $GUI_CHECKED ? 1 : 0
 				IniDelete($g_sDirProfiles, $sLstbx_SelItem)
 				IniWrite($g_sDirProfiles, $sSelectedProfile, "Profile", $sSelectedProfile)
 				IniWrite($g_sDirProfiles, $sSelectedProfile, "Emulator", $sSelectedEmulator)
@@ -789,7 +808,7 @@ Func RunSetup()
 				Local $sEmulator = $g_sIniEmulator
 				If $g_sIniEmulator = "BlueStacks3" Then $sEmulator = "BlueStacks2"
 				$aParameters = StringSplit($g_sIniParameters, "")
-				Local $sSpecialParameter = $aParameters[1] = 1 ? " /nowatchdog" : "" & $aParameters[2] = 1 ? " /dock1" : "" & $aParameters[3] = 1 ? " /dock2" : "" & $aParameters[4] = 1 ? " /dpiaware" : "" & $aParameters[5] = 1 ? " /debug" : "" & $aParameters[6] = 1 ? " /minigui" : ""
+				Local $sSpecialParameter = $aParameters[1] = 1 ? " /nowatchdog" : "" & $aParameters[2] = 1 ? " /dock1" : "" & $aParameters[3] = 1 ? " /dock2" : "" & $aParameters[4] = 1 ? " /dpiaware" : "" & $aParameters[5] = 1 ? " /debug" : "" & $aParameters[6] = 1 ? " /minigui" : "" & $aParameters[7] = 1 ? " /hideandroid" : ""
 				_GUICtrlStatusBar_SetText($g_hLog, "Running: " & $g_sIniProfile)
 				If FileExists($g_sIniDir & "\" & $g_sBotFile) = 1 Then
 					ShellExecute($g_sBotFile, $g_sIniProfile & " " & $sEmulator & " " & $g_sIniInstance & $sSpecialParameter, $g_sIniDir)
@@ -815,7 +834,7 @@ Func CreateShortcut()
 				Local $sEmulator = $g_sIniEmulator
 				If $g_sIniEmulator = "BlueStacks3" Then $sEmulator = "BlueStacks2"
 				$aParameters = StringSplit($g_sIniParameters, "")
-				Local $sSpecialParameter = $aParameters[1] = 1 ? " /nowatchdog" : "" & $aParameters[2] = 1 ? " /dock1" : "" & $aParameters[3] = 1 ? " /dock2" : "" & $aParameters[4] = 1 ? " /dpiaware" : "" & $aParameters[5] = 1 ? " /debug" : "" & $aParameters[6] = 1 ? " /minigui" : ""
+				Local $sSpecialParameter = $aParameters[1] = 1 ? " /nowatchdog" : "" & $aParameters[2] = 1 ? " /dock1" : "" & $aParameters[3] = 1 ? " /dock2" : "" & $aParameters[4] = 1 ? " /dpiaware" : "" & $aParameters[5] = 1 ? " /debug" : "" & $aParameters[6] = 1 ? " /minigui" : "" & $aParameters[7] = 1 ? " /hideandroid" : ""
 				If FileExists($g_sIniDir & "\" & $g_sBotFile) Then
 					$sBotFileName = $g_sBotFile
 				ElseIf FileExists($g_sIniDir & "\" & $g_sBotFileAU3) Then
@@ -913,9 +932,12 @@ Func ReadIni($sSelectedProfile)
 	$g_sIniEmulator = IniRead($g_sDirProfiles, $sSelectedProfile, "Emulator", "")
 	$g_sIniInstance = IniRead($g_sDirProfiles, $sSelectedProfile, "Instance", "")
 	$g_sIniDir = IniRead($g_sDirProfiles, $sSelectedProfile, "Dir", "")
-	$g_sIniParameters = IniRead($g_sDirProfiles, $sSelectedProfile, "Parameters", 000000)
-	If StringLen($g_sIniParameters) < 5 Then $g_sIniParameters &= 0
-	If StringLen($g_sIniParameters) < 6 Then $g_sIniParameters &= 0
+
+	Local $iParam
+	For $i = 0 To $g_iParameters
+		$iParam &= 0
+	Next
+	$g_sIniParameters = IniRead($g_sDirProfiles, $sSelectedProfile, "Parameters", $iParam)
 
 EndFunc   ;==>ReadIni
 
