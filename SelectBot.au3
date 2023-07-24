@@ -314,7 +314,7 @@ EndFunc   ;==>GUI_Profile
 Func GUI_Emulator()
 	$g_hGui_Emulator = GUICreate("Emulator", 258, 167, $g_aGuiPos_Main[0], $g_aGuiPos_Main[1] + 150, -1, -1, $g_hGui_Main)
 	$hCmb_Emulator = GUICtrlCreateCombo("BlueStacks", 24, 72, 201, 21, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL))
-	GUICtrlSetData(-1, "BlueStacks2|BlueStacks3|MEmu|Droid4X|Nox|LeapDroid|KOPLAYER|iTools")
+	GUICtrlSetData(-1, "BlueStacks2|BlueStacks3|BlueStacks5|MEmu|Droid4X|Nox|LeapDroid|KOPLAYER|iTools")
 	$hBtn_Next = GUICtrlCreateButton("Next step", 72, 120, 97, 25, $WS_GROUP)
 	GUICtrlCreateLabel("Please select your Emulator", 24, 8, 204, 57)
 	GUISetState()
@@ -335,7 +335,7 @@ Func GUI_Emulator()
 					GUIDelete($g_hGui_Emulator)
 					_GUICtrlStatusBar_SetText($g_hLog, "Emulator: " & $g_sSelectedEmulator)
 					Return 0
-				Else
+				 Else
 					$msgEmulator = MsgBox($MB_YESNO, "Error", "Sorry Chief!" & @CRLF & "Couldn't find " & $g_sSelectedEmulator & " installed on your Computer. Did you chose the wrong Emulator ? If you are sure you got it installed please click 'Yes'" & @CRLF & @CRLF & "Do you want to continue?", 0, $g_hGui_Emulator)
 					If $msgEmulator = $IDYes Then
 						IniWrite($g_sDirProfiles, $g_sTypedProfile, "Emulator", $g_sSelectedEmulator)
@@ -367,6 +367,10 @@ Func GUI_Instance()
 			GUISetState(@SW_SHOW, $g_hGui_Instance)
 			GUICtrlSetData($hLbl_Instance, "Please type in your BlueStacks3 Instance Name! Example: Android , Android_1, Android_2, etc")
 			GUICtrlSetData($hIpt_Instance, "Android_")
+	    Case "Bluestacks5"
+			GUISetState(@SW_SHOW, $g_hGui_Instance)
+			GUICtrlSetData($hLbl_Instance, "Please type in your BlueStack5 Instance Name! Example: Pie64 , Pie64_1, Pie64_2, etc")
+			GUICtrlSetData($hIpt_Instance, "Pie64_")
 		Case "MEmu"
 			GUISetState(@SW_SHOW, $g_hGui_Instance)
 			GUICtrlSetData($hLbl_Instance, "Please type in your MEmu Instance Name! Example: MEmu , MEmu_1, MEmu_2, etc")
@@ -402,8 +406,10 @@ Func GUI_Instance()
 				Return -1
 			Case $hBtn_Next
 				$Inst = GUICtrlRead($hIpt_Instance)
-				$Instances = LaunchConsole(GetInstanceMgrPath($g_sSelectedEmulator), "list vms", 1000)
+				$Instances = LaunchConsole(GetInstanceMgrPath($g_sSelectedEmulator), "list vms", 2000)
 				Switch $g_sSelectedEmulator
+					Case "BlueStacks5"
+						$Instance = StringRegExp($Instances, "(?i)" & "Pie64" & "(?:[_][0-9])?", 3)
 					Case "BlueStacks3"
 						$Instance = StringRegExp($Instances, "(?i)" & "Android" & "(?:[_][0-9])?", 3)
 					Case "iTools"
@@ -608,25 +614,27 @@ Func GUI_Edit()
 
 	Switch $g_sIniEmulator
 		Case "BlueStacks"
-			GUICtrlSetData($hCmb_Emulator, "BlueStacks2|BlueStacks3|MEmu|Droid4X|Nox|LeapDroid|KOPLAYER|iTools")
+			GUICtrlSetData($hCmb_Emulator, "BlueStacks2|BlueStacks3|BlueStacks5|MEmu|Droid4X|Nox|LeapDroid|KOPLAYER|iTools")
 			GUICtrlSetState($hIpt_Instance, $GUI_DISABLE)
 		Case "BlueStacks2"
-			GUICtrlSetData($hCmb_Emulator, "BlueStacks|BlueStacks3|MEmu|Droid4X|Nox|LeapDroid|KOPLAYER|iTools")
+			GUICtrlSetData($hCmb_Emulator, "BlueStacks|BlueStacks3|BlueStacks5|MEmu|Droid4X|Nox|LeapDroid|KOPLAYER|iTools")
 			GUICtrlSetState($hIpt_Instance, $GUI_DISABLE)
 		Case "BlueStacks3"
-			GUICtrlSetData($hCmb_Emulator, "BlueStacks|BlueStacks2|MEmu|Droid4X|Nox|LeapDroid|KOPLAYER|iTools")
+			GUICtrlSetData($hCmb_Emulator, "BlueStacks|BlueStacks2|BlueStacks5|MEmu|Droid4X|Nox|LeapDroid|KOPLAYER|iTools")
+		Case "BlueStacks5"
+			GUICtrlSetData($hCmb_Emulator, "BlueStacks|BlueStacks2|BlueStacks3|MEmu|Droid4X|Nox|LeapDroid|KOPLAYER|iTools")
 		Case "MEmu"
-			GUICtrlSetData($hCmb_Emulator, "BlueStacks|BlueStacks2|BlueStacks3|Droid4X|Nox|LeapDroid|KOPLAYER|iTools")
+			GUICtrlSetData($hCmb_Emulator, "BlueStacks|BlueStacks2|BlueStacks3|BlueStacks5|Droid4X|Nox|LeapDroid|KOPLAYER|iTools")
 		Case "Droid4X"
-			GUICtrlSetData($hCmb_Emulator, "BlueStacks|BlueStacks2|BlueStacks3|MEmu|Nox|LeapDroid|KOPLAYER|iTools")
+			GUICtrlSetData($hCmb_Emulator, "BlueStacks|BlueStacks2|BlueStacks3|BlueStacks5|MEmu|Nox|LeapDroid|KOPLAYER|iTools")
 		Case "Nox"
-			GUICtrlSetData($hCmb_Emulator, "BlueStacks|BlueStacks2|BlueStacks3|MEmu|Droid4X|LeapDroid|KOPLAYER|iTools")
+			GUICtrlSetData($hCmb_Emulator, "BlueStacks|BlueStacks2|BlueStacks3|BlueStacks5|MEmu|Droid4X|LeapDroid|KOPLAYER|iTools")
 		Case "LeapDroid"
-			GUICtrlSetData($hCmb_Emulator, "BlueStacks|BlueStacks2|BlueStacks3|MEmu|Droid4X|Nox|KOPLAYER|iTools")
+			GUICtrlSetData($hCmb_Emulator, "BlueStacks|BlueStacks2|BlueStacks3|BlueStacks5|MEmu|Droid4X|Nox|KOPLAYER|iTools")
 		Case "KOPLAYER"
-			GUICtrlSetData($hCmb_Emulator, "BlueStacks|BlueStacks2|BlueStacks3|MEmu|Droid4X|Nox|LeapDroid|iTools")
+			GUICtrlSetData($hCmb_Emulator, "BlueStacks|BlueStacks2|BlueStacks3|BlueStacks5|MEmu|Droid4X|Nox|LeapDroid|iTools")
 		Case "iTools"
-			GUICtrlSetData($hCmb_Emulator, "BlueStacks|BlueStacks2|BlueStacks3|MEmu|Droid4X|Nox|LeapDroid|KOPLAYER")
+			GUICtrlSetData($hCmb_Emulator, "BlueStacks|BlueStacks2|BlueStacks3|BlueStacks5|MEmu|Droid4X|Nox|LeapDroid|KOPLAYER")
 		Case Else
 			MsgBox($MB_OK, "Error", "Oops, as it looks like you changed Data in the Config File.Pleae delete all corrupted Sections!", 0, $g_hGUI_Edit)
 	EndSwitch
@@ -648,6 +656,8 @@ Func GUI_Edit()
 				ElseIf $sSelectedEmulator <> "BlueStacks" And "BlueStacks2" Then
 					GUICtrlSetState($hIpt_Instance, $GUI_ENABLE)
 					Switch $sSelectedEmulator
+						Case "BlueStacks5"
+							GUICtrlSetData($hIpt_Instance, "Pie64_")
 						Case "BlueStacks3"
 							GUICtrlSetData($hIpt_Instance, "Android_")
 						Case "MEmu"
@@ -807,6 +817,7 @@ Func RunSetup()
 				ReadIni($sLstbx_SelItem)
 				Local $sEmulator = $g_sIniEmulator
 				If $g_sIniEmulator = "BlueStacks3" Then $sEmulator = "BlueStacks2"
+				If $g_sIniEmulator = "BlueStacks5" Then $sEmulator = "BlueStacks5"
 				$aParameters = StringSplit($g_sIniParameters, "")
 				Local $sSpecialParameter = $aParameters[1] = 1 ? " /nowatchdog" : "" & $aParameters[2] = 1 ? " /dock1" : "" & $aParameters[3] = 1 ? " /dock2" : "" & $aParameters[4] = 1 ? " /dpiaware" : "" & $aParameters[5] = 1 ? " /debug" : "" & $aParameters[6] = 1 ? " /minigui" : "" & $aParameters[7] = 1 ? " /hideandroid" : ""
 				_GUICtrlStatusBar_SetText($g_hLog, "Running: " & $g_sIniProfile)
@@ -833,6 +844,7 @@ Func CreateShortcut()
 				ReadIni($sLstbx_SelItem)
 				Local $sEmulator = $g_sIniEmulator
 				If $g_sIniEmulator = "BlueStacks3" Then $sEmulator = "BlueStacks2"
+				If $g_sIniEmulator = "BlueStacks5" Then $sEmulator = "BlueStacks5"
 				$aParameters = StringSplit($g_sIniParameters, "")
 				Local $sSpecialParameter = $aParameters[1] = 1 ? " /nowatchdog" : "" & $aParameters[2] = 1 ? " /dock1" : "" & $aParameters[3] = 1 ? " /dock2" : "" & $aParameters[4] = 1 ? " /dpiaware" : "" & $aParameters[5] = 1 ? " /debug" : "" & $aParameters[6] = 1 ? " /minigui" : "" & $aParameters[7] = 1 ? " /hideandroid" : ""
 				If FileExists($g_sIniDir & "\" & $g_sBotFile) Then
@@ -1247,6 +1259,15 @@ Func GetBlueStacksPath()
 	Return $sBlueStacksPath
 EndFunc   ;==>GetBlueStacksPath
 
+Func GetBlueStacks5Path()
+	$sBlueStacksPath = RegRead($HKLM & "\SOFTWARE\BlueStacks_nxt\", "InstallDir")
+	$sFrontend = "HD-Player.exe"
+	If $sBlueStacksPath = "" And FileExists(@ProgramFilesDir & "\BlueStacks_nxt\" & $sFrontend) = 1 Then
+		$sBlueStacksPath = @ProgramFilesDir & "\BlueStacks_nxt\"
+	EndIf
+	Return $sBlueStacksPath
+EndFunc   ;==>GetBlueStacks5Path
+
 Func GetiToolsPath()
 	Local $siTools_Path = ""
 	If $siTools_Path <> "" And FileExists($siTools_Path & "\iToolsAVM.exe") = 0 Then
@@ -1288,6 +1309,9 @@ Func IsAndroidInstalled($sAndroid)
 		Case "KOPLAYER"
 			$sPath = GetKOPLAYERPath()
 			$sFile = "KOPLAYER.exe"
+	    Case "BlueStacks5"
+			$sPath = GetBlueStacks5Path()
+			$sFile = "HD-Player.exe"
 		Case "BlueStacks" Or "BlueStacks2" Or "BlueStacks3"
 			$sPath = GetBlueStacksPath()
 			$bPlusMode = RegRead($HKLM & "\SOFTWARE\BlueStacks\", "Engine") = "plus"
@@ -1307,6 +1331,8 @@ Func GetInstanceMgrPath($sAndroid)
 	Local $sManagerPath
 
 	Switch $sAndroid
+		Case "BlueStacks5"
+			$sManagerPath = GetBlueStacks5Path() & "BstkVMMgr.exe"
 		Case "BlueStacks3"
 			$sManagerPath = GetBlueStacksPath() & "BstkVMMgr.exe"
 		Case "MEmu"
